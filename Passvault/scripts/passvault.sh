@@ -61,7 +61,7 @@ else
   LIB_DIR=${VAULT_DIR}/libs
 fi
 
-# check if TRUST_STORE is set, if so add it to the JAVA_OPTS 
+# check if TRUST_STORE is set, if so add it to the JAVA_OPTS
 if [ "$TRUST_STORE" != "" ]
 then
   JAVA_OPTS="$JAVA_OPTS -Djavax.net.ssl.trustStore=$TRUST_STORE -Djavax.net.ssl.trustStorePassword=$TRUST_PASSWORD"
