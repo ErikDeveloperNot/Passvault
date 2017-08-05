@@ -162,7 +162,6 @@ public class AESEngine implements CryptEngine {
 
 
 	public static String finalizeKey(String key, int length) throws Exception {
-		//todo revisit, but keep it simple just to get it working and pad with the same char
 		int amountToPad = 0;
 		logger.info("finalizing key of length: " + key.length() + ", to a key length of: " + length);
 		

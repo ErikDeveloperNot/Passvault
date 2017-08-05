@@ -4,13 +4,13 @@
 #JAVA=
 
 ## set Jars directory
-LIB=/Users/user1/Git/Password-Vault/PasswordVault/bin:~/.passvault/libs
+LIB=.:./lib/*
 
 ## database name
 DB=pass_vault
 
 ## passvault directory
-VAULT_DIR=/opt/tmp/tmp/.passvault
+VAULT_DIR=./.passvault
 
 ## storage type either cbl or file
 STORAGE=cbl
@@ -23,7 +23,8 @@ STORAGE=cbl
 #SYNC_DEBUG=debug
 
 ## registration server
-REG_SERVER=localhost:8443
+#REG_SERVER=localhost:8443
+REG_SERVER=ec2-52-53-254-139.us-west-1.compute.amazonaws.com:8443
 
 ## extra java options
 #JAVA_OPTS="-Djavax.net.debug=all"
@@ -60,7 +61,13 @@ else
   LIB_DIR=${VAULT_DIR}/libs
 fi
 
+# check if TRUST_STORE is set, if so add it to the JAVA_OPTS
+if [ "$TRUST_STORE" != "" ]
+then
+  JAVA_OPTS="$JAVA_OPTS -Djavax.net.ssl.trustStore=$TRUST_STORE -Djavax.net.ssl.trustStorePassword=$TRUST_PASSWORD"
+fi
+
 (
 cd $VAULT_DIR &&
-exec $JAVA_EX -cp .:${LIB_DIR}/* $JAVA_OPTS -Djava.util.logging.config.file=logging.properties -Dcom.passvault.sync.logging=$SYNC_DEBUG -Djavax.net.ssl.trustStore=$TRUST_STORE -Djavax.net.ssl.trustStorePassword=$TRUST_PASSWORD -Dcom.passvault.register.server=$REG_SERVER com.passvault.tools.PasswordVault $DB $STORAGE
+exec $JAVA_EX -cp ${LIB_DIR} $JAVA_OPTS -Djava.util.logging.config.file=logging.properties -Dcom.passvault.sync.logging=$SYNC_DEBUG -Dcom.passvault.register.server=$REG_SERVER com.passvault.tools.PasswordVault $DB $STORAGE 2> err.log
 )

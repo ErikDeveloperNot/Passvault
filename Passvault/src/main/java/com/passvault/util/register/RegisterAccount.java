@@ -21,9 +21,11 @@ import org.glassfish.jersey.client.ClientConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passvault.util.Utils;
+import com.passvault.util.model.DeleteRequest;
 import com.passvault.util.model.Gateway;
-import com.passvault.util.model.RegistrationEmail;
+import com.passvault.util.model.GithubContent;
 import com.passvault.util.model.RegistrationRequest;
+import com.passvault.util.model.RegistrationServer;
 import com.passvault.util.model.RegistrationUUID;
 
 
@@ -33,8 +35,11 @@ public class RegisterAccount {
 	private static final String VERSION_1 = "v1.0";
 	private static final String VERSION_2 = "v2.0";
 	private static final String BASE_URL = "/PassvaultServiceRegistration";
-	private static final String KEY_STORE = "com/passvault/ssl/passvault_store.jks";
+	private static final String KEY_STORE_JKS = "com/passvault/ssl/passvault_store.jks";
+	private static final String KEY_STORE_BKS = "com/passvault/ssl/passvault_store.bks";
 	private static final String KEY_STORE_PASSWORD = "passvault";
+	private static final String GITHUB_REG_URL = "https://api.github.com/repos/ErikDeveloperNot/Passvault/" +
+												"contents/Passvault/config/RegistrationServer.json?ref=master";
 	private static Logger logger;
 
 	private String registerServer;
@@ -68,6 +73,38 @@ public class RegisterAccount {
 		Gateway returnModel = new Gateway();
 		logger.info("Sending register request for: " + email);
 		sendPOST(regResp, sendModel, returnModel, new String[]{"service", "registerV1"});
+		//System.out.println(">>>>>>>> success=" + regResp.success() + "\n\n" + regResp.getError());
+		
+		/*
+		 * if some type of connection error happened check to see if the registration server URL has changed
+		 */
+		if (!regResp.success()) {
+			if (regResp.getError() != null && (regResp.getError().contains("java.net.UnknownHostException") ||
+					regResp.getError().contains("java.net.ConnectException"))) {
+				// check Github for current URL
+				logger.info("Checking if registration URL has changed");
+				//RegisterAccount regAcct = new RegisterAccount();
+				RegisterResponse getRegServer = new GetRegisterServerResponse();
+				GithubContent githubModel = new GithubContent();
+				sendGetReistrationServer(getRegServer, githubModel);
+				
+				if (getRegServer.hasReturnValue()) {
+					logger.info("Message: " + getRegServer.getMessage());
+					RegistrationServer server = (RegistrationServer) getRegServer.getReturnValue();
+					
+					if (!registerServer.equalsIgnoreCase(server.getRegistrationServer().trim())) {
+						logger.info("Registration Server URL has changed, trying new URL");
+						registerServer = server.getRegistrationServer().trim();
+						return registerV1(email, password);
+					} else {
+						logger.info("Unable to contact registration server: " + registerServer);
+					}
+					
+				} else {
+					logger.warning(getRegServer.getError());
+				}
+			}
+		}
 		
 		return regResp;
 	}
@@ -129,16 +166,34 @@ public class RegisterAccount {
 	 */
 	
 	
-	public RegisterResponse deleteAccount(String account) {
+	public RegisterResponse deleteAccount(String account, String password) {
 		
 		DeleteAccountResponse regResp = new DeleteAccountResponse();
-		RegistrationEmail sendModel = new RegistrationEmail();
-		sendModel.setEmail(account);
+		DeleteRequest sendModel = new DeleteRequest();
+		sendModel.setUser(account);
+		sendModel.setPassword(password);
 		String returnModel = new String();
 		logger.info("Sending delete register account request for account: " + account);
 		sendPOST(regResp, sendModel, returnModel, new String[]{"service", "deleteAccount"});
 		
 		return regResp;
+	}
+	
+	
+	private void sendGetReistrationServer(RegisterResponse regResp, Object returnModel) {
+		SSLContext ssl;
+		
+		try {
+			ssl = SSLContext.getInstance("TLSv1.2");
+		    ssl.init(null, null, null);
+		    Client client = ClientBuilder.newBuilder().sslContext(ssl).build();
+			Response response = client.target(GITHUB_REG_URL).request().get();
+			checkResponse(regResp, returnModel, response);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	
@@ -247,8 +302,42 @@ public class RegisterAccount {
 	
 	
 	
-	//public static void main(String[] args)  throws Exception {
+	public static void main(String[] args)  throws Exception {
+		RegisterAccount regAcct = new RegisterAccount();
+		RegisterResponse getRegServer = new GetRegisterServerResponse();
+		GithubContent sendModel = new GithubContent();
+		regAcct.sendGetReistrationServer(getRegServer, sendModel);
+		
+		if (getRegServer.hasReturnValue()) {
+			System.out.println("Message: " + getRegServer.getMessage());
+			RegistrationServer server = (RegistrationServer) getRegServer.getReturnValue();
+			System.out.println("Server: " + server.getRegistrationServer());
+		} else {
+			System.out.println(getRegServer.getError());
+		}
+		
+		
+		
+		
+		
+		
 		/*
+		String getModel = new String();
+		regAcct.sendGetReistrationServer(getRegServer, getModel);
+		System.out.println(getRegServer.success() + "\n" + getRegServer.getReturnValue());
+		String githubContentString = (String) getRegServer.getReturnValue();
+		ObjectMapper mapper = new ObjectMapper();
+		GithubContent githubContent = mapper.readValue(githubContentString, GithubContent.class);
+		System.out.println(githubContent.getContent());
+		mapper = new ObjectMapper();
+		String content = new String(android.util.Base64.decode(githubContent.getContent(), android.util.Base64.NO_WRAP));
+		System.out.println(">\n" + content + "\n>");
+		
+		RegistrationServer regServer = mapper.readValue(content, RegistrationServer.class);
+		System.out.println(regServer.getRegistrationServer());
+		*/
+
+		/* 
 		Object obj = new Todo();
 		Todo sendTodo = new Todo();
 		sendTodo.setDescription("D1");
@@ -381,15 +470,30 @@ public class RegisterAccount {
 			e.printStackTrace();
 		}
 		*/
-    //}
+    }
 	
 	
 	private static Client getClient(String scheme) {
 		Client client = null;
 		logger.fine("Getting client for protocol: " + scheme);
 		
+		String platform;
+		
+		try {
+			Class.forName("com.erikdeveloper.passvault.couchbase.AndroidCBLStore");
+			platform = "mobile";
+		} catch(Exception e) {
+			platform = "desktop";
+		}
+		
 		if (scheme.equalsIgnoreCase("https")) {
-			KeyStore store = Utils.getKeyStore(KEY_STORE, KEY_STORE_PASSWORD);
+			KeyStore store = null;
+			
+			if (platform.equalsIgnoreCase("mobile"))
+				store = Utils.getKeyStore(KEY_STORE_BKS, KEY_STORE_PASSWORD, "BKS");
+			else
+				store = Utils.getKeyStore(KEY_STORE_JKS, KEY_STORE_PASSWORD, "JKS");
+			
 			SslConfigurator sslConfig = SslConfigurator.newInstance()
 					.trustStore(store)
 					.trustStorePassword(KEY_STORE_PASSWORD);

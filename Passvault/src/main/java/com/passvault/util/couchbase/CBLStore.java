@@ -2,6 +2,7 @@ package com.passvault.util.couchbase;
 
 
 import java.util.ArrayList;
+//import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -24,7 +25,6 @@ import com.passvault.crypto.CryptEngine;
 import com.passvault.util.Account;
 import com.passvault.util.Utils;
 
-//import java.util.Base64;
 import android.util.Base64;
 
 public class CBLStore {
@@ -356,7 +356,7 @@ public class CBLStore {
 	}
 	
 
-	protected byte[] decodeString(String toDecode) {	
+	public byte[] decodeString(String toDecode) {	
 		
 		if (toDecode == null || toDecode.equals("")) {
 			//return Base64.getDecoder().decode("");
@@ -368,7 +368,7 @@ public class CBLStore {
 	}	
 	
 	
-	protected byte[] encodeBytes(byte[] toEncode) {
+	public byte[] encodeBytes(byte[] toEncode) {
 		
 		if (toEncode == null) {
 			//return Base64.getEncoder().encode(new byte[]{});
@@ -418,11 +418,11 @@ public class CBLStore {
 			for (Iterator<QueryRow> it = result; it.hasNext(); ) {
 			    QueryRow row = it.next();
 			    Document toCheck = row.getDocument();
-			    logger.finest("Document: " + toCheck.getId() + ", is _deleted: " + toCheck.isDeleted());
+			    logger.info("Document: " + toCheck.getId() + ", is _deleted: " + toCheck.isDeleted());
 			    
 			    if (toCheck.isDeleted()) {
 			    		toCheck.purge();
-			    		logger.finest("Document: " + toCheck.getId() + ", purged");
+			    		logger.info("Document: " + toCheck.getId() + ", purged");
 			    }
 			}
 			

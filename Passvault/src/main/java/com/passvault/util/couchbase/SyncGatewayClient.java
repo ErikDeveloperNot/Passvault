@@ -166,7 +166,7 @@ params.put("accountUUID", accountUUID);
 			String platform;
 			
 			try {
-				Class.forName("com.developernot.passvault.couchbase.AndroidCBLStore");
+				Class.forName("com.erikdeveloper.passvault.couchbase.AndroidCBLStore");
 				platform = "mobile";
 			} catch(Exception e) {
 				platform = "desktop";
@@ -176,10 +176,19 @@ params.put("accountUUID", accountUUID);
 			
 			SSLSocketFactory sslSocketFactory = null;
 			X509TrustManager trustManager = null;
-			
+		
 			try {
-				InputStream stream = this.getClass().getClassLoader().getResourceAsStream("com/passvault/ssl/passvault_store.jks");					
-				final KeyStore store = KeyStore.getInstance("JKS");
+				KeyStore store = null;
+				InputStream stream = null;
+				
+				if (platform.equalsIgnoreCase("mobile")) {
+					stream = this.getClass().getClassLoader().getResourceAsStream("com/passvault/ssl/passvault_store.bks");
+					store = KeyStore.getInstance("BKS");
+				} else {
+					stream = this.getClass().getClassLoader().getResourceAsStream("com/passvault/ssl/passvault_store.jks");
+					store = KeyStore.getInstance("JKS");
+				}
+
 				store.load(stream, "passvault".toCharArray());
 			
 				
@@ -230,7 +239,7 @@ params.put("accountUUID", accountUUID);
 		pusher.setContinuous(false); 
 		pusher.setFilter("accountUUIDFilter");
 		pusher.setFilterParams(params);
-		
+	
 		puller = database.createPullReplication(url);
 		puller.setContinuous(false); 
 
@@ -390,6 +399,7 @@ params.put("accountUUID", accountUUID);
 		
 		logger.info("Adding database change listener");
 		database.addChangeListener(changeListener);
+	
 	}
 	
 	
@@ -436,6 +446,7 @@ params.put("accountUUID", accountUUID);
 	public class ReplicationStatus {
 		
 		public boolean isRunning() {
+logger.info("+++++++++++++++ pusher status=" + pusher.getStatus().toString() + ", puller status=" + puller.getStatus().toString());
 			return (puller.isRunning() || pusher.isRunning());
 		}
 

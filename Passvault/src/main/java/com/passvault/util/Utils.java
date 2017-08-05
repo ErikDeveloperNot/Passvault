@@ -9,6 +9,7 @@ import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+//import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Level;
@@ -31,15 +32,38 @@ public class Utils {
 	
 	private static String platform;
 	private static Logger logger;
+	private static AccountUUIDResolver uuidResolver;
 	
 	static {
 		logger = Logger.getLogger("com.passvault.util");
 		
 		try {
-			Class.forName("com.developernot.passvault.couchbase.AndroidCBLStore");
+			Class.forName("com.erikdeveloper.passvault.couchbase.AndroidCBLStore");
 			platform = "mobile";
 		} catch(Exception e) {
 			platform = "desktop";
+		}
+		
+		if (platform.equals("desktop")) {
+			uuidResolver = new AccountUUIDResolver() {
+				
+				@Override
+				public String getAccountUUID() {
+					String toReturn = null;
+					
+					try {
+						Gateway[] remote = SyncCmd.loadSyncConfig("remote");
+						
+						if (remote != null && remote.length > 0) 
+							toReturn = remote[0].getUserName();
+						
+					} catch (Exception e) {
+						logger.log(Level.WARNING, "Error opening sync configuration file: " + e.getMessage(), e);
+					}
+					
+					return (toReturn == null ? "" : toReturn);
+				}
+			};
 		}
 	}
 
@@ -160,14 +184,13 @@ public class Utils {
 	}
 	
 	
-	public static KeyStore getKeyStore(String store, String password) {
+	public static KeyStore getKeyStore(String store, String password, String type) {
 		KeyStore toReturn = null;
 		logger.info("Loading keystore: " + store);
-		
 		InputStream stream = Utils.class.getClassLoader().getResourceAsStream(store);					
 		
 		try {
-			toReturn = KeyStore.getInstance("JKS");
+			toReturn = KeyStore.getInstance(type.toUpperCase());
 			toReturn.load(stream, password.toCharArray());
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "Error loading keystore: " + e.getMessage(), e);
@@ -200,6 +223,7 @@ public class Utils {
 		}
 		
 	}
+	
 	
 	
 	public static SSLSocketFactory createSSLSocketFactoryWitDefaultTrustManager(KeyStore store) {
@@ -332,7 +356,7 @@ public class Utils {
 			return (SSLSocketFactory)SSLSocketFactory.getDefault();
 	}
 	
-	
+	/*
 	public static String getAccountUUID() {
 		String accountUUID = null;
 		
@@ -360,10 +384,16 @@ public class Utils {
 		
 		return accountUUID;
 	}
+	*/
+	
+	public static String getAccountUUID() {
+		return uuidResolver.getAccountUUID();
+	}
 	
 	
-	
-	
+	public static void setAccountUUIDResolver(AccountUUIDResolver uuidResolver) {
+		Utils.uuidResolver = uuidResolver;
+	}
 	
 	/*
 	public static void main(String[] args) {

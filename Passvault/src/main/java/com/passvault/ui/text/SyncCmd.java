@@ -59,7 +59,7 @@ public class SyncCmd {
 		switch (choice) {
 		case "1":
 			//syncWithRemoteV2();
-			syncWithRemoreV1();
+			syncWithRemoteV1();
 			break;
 		case "2":
 			syncWithLocal();
@@ -152,7 +152,7 @@ public class SyncCmd {
 	}
 	
 	
-	private void syncWithRemoreV1() {
+	private void syncWithRemoteV1() {
 		Gateway[] gateways = null;
 		
 		try {
@@ -243,7 +243,8 @@ public class SyncCmd {
 			} else {
 				// Delete account
 				logger.info("Deleting free service account");
-				RegisterResponse regResp = new RegisterAccount().deleteAccount(gateways[0].getUserName());
+				RegisterResponse regResp = new RegisterAccount().deleteAccount(gateways[0].getUserName(),
+						gateways[0].getPassword());
 				
 				if (regResp.success()) {
 					Cmd.p("\n" + regResp.getMessage() + "\n");
@@ -640,11 +641,11 @@ public class SyncCmd {
 	}
 	
 	
-	private static void encryptPasswords(Gateways gateways) {
+	private void encryptPasswords(Gateways gateways) {
 		Gateway remote = gateways.getRemote();
 		
 		if (remote != null) {
-			remote.setPassword(new String(Utils.encodeBytes(AESEngine.getInstance()
+			remote.setPassword(new String(cblStore.encodeBytes(AESEngine.getInstance()
 					.encryptString(key, remote.getPassword()))));
 		}
 		
@@ -652,7 +653,7 @@ public class SyncCmd {
 		
 		if (local != null) {
 			for (Gateway gateway : local) {
-				gateway.setPassword(new String(Utils.encodeBytes(AESEngine.getInstance()
+				gateway.setPassword(new String(cblStore.encodeBytes(AESEngine.getInstance()
 						.encryptString(key, gateway.getPassword()))));
 			}
 		}
