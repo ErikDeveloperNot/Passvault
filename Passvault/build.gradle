@@ -28,7 +28,8 @@ task buildProduction {
         delete(buildDirProd);
         copyFiles("dependencies", buildDirProd + installDir + "lib")
         copyFiles("scripts", buildDirProd)
-        copyFiles("config", buildDirProd + installDir)
+        copyFiles("install", buildDirProd + installExtras)
+        copyFiles("config/logging.properties", buildDirProd + installDir)
         copyFiles("build/libs/Passvault-core.jar", buildDirProd + installDir + "lib")
         copyFiles("build/libs/Passvault-ui.jar", buildDirProd + installDir + "lib")
         copyFiles("build/libs/Passvault-androidBase64.jar", buildDirProd + installDir + "lib")

@@ -10,10 +10,13 @@ LIB=.:./lib/*
 DB=pass_vault
 
 ## passvault directory
-VAULT_DIR=./.passvault
+VAULT_DIR=<VAULT_DIR>/.passvault
 
 ## storage type either cbl or file
 STORAGE=cbl
+
+## if dadtabase type is cbl purge deleted accounts on startup, [ture/false], defaults to false
+PURGE_DELETES=false
 
 ## SSL setting
 #TRUST_STORE=/opt/ssl/keystores/passvault_store.jks
@@ -69,5 +72,5 @@ fi
 
 (
 cd $VAULT_DIR &&
-exec $JAVA_EX -cp ${LIB_DIR} $JAVA_OPTS -Djava.util.logging.config.file=logging.properties -Dcom.passvault.sync.logging=$SYNC_DEBUG -Dcom.passvault.register.server=$REG_SERVER com.passvault.tools.PasswordVault $DB $STORAGE 2> err.log
+exec $JAVA_EX -cp ${LIB_DIR} $JAVA_OPTS -Djava.util.logging.config.file=logging.properties -Dcom.passvault.sync.logging=$SYNC_DEBUG -Dcom.passvault.register.server=$REG_SERVER -Dcom.passvault.store.purge=$PURGE_DELETES com.passvault.tools.PasswordVault $DB $STORAGE 2> err.log
 )

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+osascript -e 'tell app "Terminal"
+    do script "<VAULT_DIR>/Passvault.sh"
+end tell'
+

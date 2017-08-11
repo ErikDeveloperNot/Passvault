@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Terminal=true
+Name=Passvault
+Icon=<VAULT_DIR>/install/linux/vault.png
+Exec=<VAULT_DIR>/passvault.sh

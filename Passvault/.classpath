@@ -4,5 +4,32 @@
 	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8/"/>
 	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/aopalliance-repackaged-2.5.0-b32.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/commons-beanutils-1.9.2.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/commons-collections-3.2.2.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/commons-digester-1.8.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/commons-validator-1.6.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/couchbase-lite-java-1.4.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/couchbase-lite-java-core-1.4.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/couchbase-lite-java-sqlite-custom-1.4.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/hk2-api-2.5.0-b32.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/hk2-locator-2.5.0-b32.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/hk2-utils-2.5.0-b32.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/jackson-annotations-2.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/jackson-core-2.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/jackson-databind-2.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/javassist-3.20.0-GA.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/javax.annotation-api-1.2.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/javax.inject-1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/javax.inject-2.5.0-b32.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/javax.ws.rs-api-2.0.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/jersey-client-2.25.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/jersey-common-2.25.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/jersey-guava-2.25.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/okhttp-3.3.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/okio-1.8.0.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/osgi-resource-locator-1.0.1.jar"/>
+	<classpathentry kind="lib" path="/Users/user1/Git/passvault/Passvault/dependencies/stateless4j-2.4.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
