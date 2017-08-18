@@ -1,6 +1,7 @@
 package com.passvault.util;
 
 import java.io.Serializable;
+import java.net.URI;
 
 public class Account implements Comparable<Account>, Serializable {
 
@@ -10,6 +11,7 @@ public class Account implements Comparable<Account>, Serializable {
 	private String oldPass;
 	private String accountUUID;
 	private long updateTime;
+	private String url;
 	
 	public static final String BLANK_PASSWORD = "\t";
 	
@@ -17,15 +19,21 @@ public class Account implements Comparable<Account>, Serializable {
 	public static final String RECORD_DELIMETER = "\\|";
 	public static final String FIELD_DELIMIETER = ":";
 	
-	public Account(String name, String user, String pass, String oldPass, String accountUUID, long updateTime) {
+	public Account(String name, String user, String pass, String oldPass, String accountUUID, long updateTime,
+			String url) {
 		this.user = user;
 		this.name = name;
 		this.pass = pass;
 		this.oldPass = oldPass;
 		this.updateTime = updateTime;
 		this.accountUUID = accountUUID;
+		this.setUrl(url);
 	}
 	
+	
+	public Account(String name, String user, String pass, String oldPass, String accountUUID, long updateTime) {
+		this(name, user, pass, oldPass, accountUUID, updateTime, "");
+	}
 	
 	public String getAccountUUID() {
 		return accountUUID;
@@ -99,6 +107,20 @@ public class Account implements Comparable<Account>, Serializable {
 			return true;
 		else 
 			return false;
+	}
+
+
+	public String getUrl() {
+		return url;
+	}
+
+
+	public void setUrl(String url) {
+		
+		if (!url.toLowerCase().trim().startsWith("http")) 
+			url = "http://" + url;
+		
+		this.url = url;
 	}
 	
 	

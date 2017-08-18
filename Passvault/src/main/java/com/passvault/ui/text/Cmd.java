@@ -1,9 +1,12 @@
 package com.passvault.ui.text;
 
+import java.awt.Desktop;
+import java.awt.Desktop.Action;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
@@ -179,7 +182,15 @@ public class Cmd {
 		Clipboard clipBoard = Toolkit.getDefaultToolkit().getSystemClipboard();
 		clipBoard.setContents(stringSelection, stringSelection);
 		p("Password copied to clipboard for account " + getAccount.getName() + 
-				", for username " + getAccount.getUser());
+				", for username " + getAccount.getUser() + "\n");
+		
+		if (!getAccount.getUrl().equalsIgnoreCase("http://")) {
+			p("Account URL: " + getAccount.getUrl());
+			String open = System.console().readLine("Open browser to account URL [Y/N]: ");
+			
+			if (open.equalsIgnoreCase("Y")) 
+				launchBrowser(getAccount.getUrl());
+		}
 			
 	}
 	
@@ -187,11 +198,12 @@ public class Cmd {
 	public void createAccount() {
 		String name = System.console().readLine("Enter Account Name: ");
 		String user = System.console().readLine("Enter Account User Name: ");
+		String url = System.console().readLine("Enter site URL or just press <return>: ");
 		String pass = getPassword();
 		Account newAccount = null;
 		
 		if (name.length()>0 && user.length()>0) {	
-			newAccount = new Account(name, user,pass, pass, "", System.currentTimeMillis());
+			newAccount = new Account(name, user,pass, pass, "", System.currentTimeMillis(), url);
 			
 			if (accounts.contains(newAccount)) {
 				System.err.println("\nAn Account with the same name already exists\n");
@@ -243,10 +255,15 @@ public class Cmd {
 		
 		String user = System.console().readLine("Enter Account User Name or Press <Enter> to keep " +
 				" current User Name [" + updateAccount.getUser() + "]: ");
+		String url = System.console().readLine("Enter URL or Press <Enter> to keep " +
+				" current URL [" + updateAccount.getUrl() + "]: ");
 		String pass = getPassword();
 		
 		if (user.length() > 0)
 			updateAccount.setUser(user);
+		
+		if (url.length() > 0)
+			updateAccount.setUrl(url);
 		
 		if (!pass.equals(updateAccount.getOldPass()))
 			updateAccount.setOldPass(updateAccount.getPass());
@@ -428,6 +445,28 @@ public class Cmd {
 		
 		p("Account Removed");
 		
+	}
+	
+	
+	private void launchBrowser(String url) {
+		
+		if (Desktop.isDesktopSupported()) {
+			Desktop desktop = Desktop.getDesktop();
+			
+			if (desktop.isSupported(Action.BROWSE)) {
+				try {
+					desktop.browse(new URI(url));
+				} catch (Exception e) {
+					p("Error trying to open page: " + e.getMessage());
+					logger.warning("Error opening browser to: " + url + "\n" + e.getMessage());
+					e.printStackTrace();
+				}
+			} else {
+				p("Browser open action not supported");
+			}
+		} else {
+			p("Browser launch not supported on this platform");
+		}
 	}
 	
 	

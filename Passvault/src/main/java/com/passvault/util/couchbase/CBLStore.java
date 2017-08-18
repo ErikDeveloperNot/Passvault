@@ -147,7 +147,7 @@ public class CBLStore {
 			for (Account account : accounts) {
 				deleteAccounts.add(account.getName());
 				newAccounts.add(new Account(account.getName(), account.getUser(), account.getPass(), 
-						account.getOldPass(), uuid, account.getUpdateTime()));
+						account.getOldPass(), uuid, account.getUpdateTime(), account.getUrl()));
 			}
 		}
 		
@@ -202,6 +202,7 @@ public class CBLStore {
 				content.put("UpdateTime", account.getUpdateTime());
 				//content.put("AccountUUID", account.getAccountUUID());
 				content.put("AccountUUID", accountUUID);
+				content.put("URL", account.getUrl());
 				
 				Document document = database.getDocument(accountUUID + account.getName());
 				logger.finest("Document id: " + accountUUID + account.getName() + ", getCurrentRevisionId: " + 
@@ -280,6 +281,8 @@ public class CBLStore {
 					}
 				}
 				
+				String url = (String)document.getProperty("URL");
+				
 				/*
 				String _accountUUID = (String)document.getProperty("AccountUUID");
 				
@@ -288,7 +291,8 @@ public class CBLStore {
 				*/
 				
 				logger.finest("Adding account: " + accountName);
-				accounts.add(new Account(accountName, userName, password, oldPassword, _accountUUID, updateTime));
+				accounts.add(new Account(accountName, userName, password, oldPassword, _accountUUID, updateTime,
+						(url != null) ? url : ""));
 			}
 			
 		} catch (CouchbaseLiteException e) {

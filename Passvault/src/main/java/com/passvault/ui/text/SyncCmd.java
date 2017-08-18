@@ -228,9 +228,10 @@ public class SyncCmd {
 			
 		} else {
 			Cmd.p("\n1. Sync with existing free service account.");
-			Cmd.p("2. Delete existing free service account");
+			Cmd.p("2. Delete existing free service account, (Account will deleted on Sync Gateway)");
+			Cmd.p("3. Remove existing free service account, (Account will remain active on Sync Gateway)");
 			String choiceStr = System.console().readLine("\nEnter choice: ");
-			int choiceInt = verifyChoice(choiceStr, 2);
+			int choiceInt = verifyChoice(choiceStr, 3);
 			
 			if (choiceInt++ == -1 ) {
 				Cmd.p("\nInvalid choice.");
@@ -240,7 +241,7 @@ public class SyncCmd {
 			if (choiceInt == 1) {
 				logger.info("Syncing with free service");
 				sync(gateways[0]);
-			} else {
+			} else if (choiceInt == 2) {
 				// Delete account
 				logger.info("Deleting free service account");
 				RegisterResponse regResp = new RegisterAccount().deleteAccount(gateways[0].getUserName(),
@@ -255,6 +256,12 @@ public class SyncCmd {
 				}
 				
 				// even if the delete fails still remove config and rest AccountUUID
+				logger.fine("Updating AccountUUID");
+				cblStore.updateAccountUUID(accounts, "");
+				logger.info("Saving gateway config");
+				saveRemoteGateway(null);
+			} else {
+				logger.info("Removing free service account");
 				logger.fine("Updating AccountUUID");
 				cblStore.updateAccountUUID(accounts, "");
 				logger.info("Saving gateway config");

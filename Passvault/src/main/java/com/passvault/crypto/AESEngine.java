@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.Key;
+import java.security.Provider;
+import java.security.Security;
 import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
@@ -143,7 +145,7 @@ public class AESEngine implements CryptEngine {
 		try {
 	        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
 	        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-	        
+
 	        byte[] unencryptedBytes = unencryptedString.getBytes();
 	        logger.finest("unencryptedBytes length: " + unencryptedBytes.length);	        
 	        byte[] encryptedBytes = cipher.doFinal(unencryptedBytes);
@@ -214,6 +216,7 @@ public class AESEngine implements CryptEngine {
 		}
 		
 		logger.info("Returning key of length: " + key.length());
+//System.out.println("key=\"" + key + "\"");
 		return key;
 	}
 
@@ -252,7 +255,7 @@ public class AESEngine implements CryptEngine {
 		
 		System.out.println(AESEngine.finalizeKey(key, KEY_LENGTH_128));
 		System.out.println(AESEngine.finalizeKey(key, KEY_LENGTH_192));
-		System.out.println(AESEngine.finalizeKey(key, KEY_LENGTH_256));
+		System.out.println(AESEngine.finalizeKey("notreal", KEY_LENGTH_256));
 		//System.out.println(aes.finalizeKey(key, KEY_LENGTH_512));
 	}
 	*/
