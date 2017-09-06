@@ -1,5 +1,6 @@
 package com.passvault.ui.text;
 
+import java.awt.AWTEvent;
 import java.awt.Desktop;
 import java.awt.Desktop.Action;
 import java.awt.Toolkit;
@@ -7,6 +8,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.lang.reflect.Constructor;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
@@ -14,6 +16,7 @@ import java.util.logging.Logger;
 import com.passvault.crypto.AESEngine;
 import com.passvault.tools.PasswordVault;
 import com.passvault.util.Account;
+import com.passvault.util.MRUComparator;
 import com.passvault.util.RandomPasswordGenerator;
 import com.passvault.util.Utils;
 import com.passvault.util.couchbase.AccountsChanged;
@@ -28,6 +31,7 @@ public class Cmd {
 	private String dataFile;
 	private CBLStore cblStore;
 	private StoreType storeType;
+	private MRUComparator mruComparator;
 	private static Logger logger;
 	
 	public enum StoreType {CBL_STORE, DAT_FILE};
@@ -52,6 +56,10 @@ public class Cmd {
 		this.accounts = accounts;
 		this.cblStore = cblStore;
 		storeType = StoreType.CBL_STORE;
+		// only available for CBL client
+		//mruComparator = MRUComparator.getInstance();		
+		mruComparator = new MRUComparator(cblStore);
+		mruComparator.setReverse(true);
 	}
 	
 	
@@ -59,14 +67,28 @@ public class Cmd {
 		p("");
 		p("Accounts:");
 		int i=1;
+		boolean showMsg = false;
 		
 		synchronized (accounts) {
+			accounts.sort(mruComparator);
+			
 			for (Account account : accounts) {
-				p((i++) + ". " + account.getName());
+				if (account.isValidEncryption()) { 
+					p((i++) + ". " + account.getName());
+				} else {
+					p((i++) + ". " + account.getName() + " **");
+					showMsg = true;
+				}
 			}
 		}
 		
-		p("");
+		if (!showMsg) {
+			p("");
+		} else {
+			p("");
+			p("** denotes an account whose password could not be decrypted with provided key");
+			p("");
+		}
 		
 	}
 	
@@ -169,6 +191,11 @@ public class Cmd {
 			return;
 		}
 		
+		// verify account is not marked as unable to decrypt password
+		if (!getAccount.isValidEncryption())
+			if (!changeInvalidKey(getAccount))
+				return;
+		
 		p("1. Get current password");
 		p("2. Get old password");
 		String whichPass = System.console().readLine("Enter [1] for current password, [2] for old password: ");
@@ -178,9 +205,11 @@ public class Cmd {
 			stringSelection = new StringSelection(getAccount.getOldPass());
 		else
 			stringSelection = new StringSelection(getAccount.getPass());
-		
+
 		Clipboard clipBoard = Toolkit.getDefaultToolkit().getSystemClipboard();
 		clipBoard.setContents(stringSelection, stringSelection);
+		mruComparator.accountAccessed(getAccount.getName());
+
 		p("Password copied to clipboard for account " + getAccount.getName() + 
 				", for username " + getAccount.getUser() + "\n");
 		
@@ -253,11 +282,20 @@ public class Cmd {
 			return;
 		}
 		
+		// verify account is not marked as unable to decrypt password
+		if (!updateAccount.isValidEncryption())
+			if (!changeInvalidKey(updateAccount))
+				return;
+		
 		String user = System.console().readLine("Enter Account User Name or Press <Enter> to keep " +
 				" current User Name [" + updateAccount.getUser() + "]: ");
 		String url = System.console().readLine("Enter URL or Press <Enter> to keep " +
 				" current URL [" + updateAccount.getUrl() + "]: ");
-		String pass = getPassword();
+		String pass = updateAccount.getPass();
+		String changePass = System.console().readLine("Enter [y/Y] to update the existing password: ");
+		
+		if (changePass.equalsIgnoreCase("Y"))
+			pass = getPassword();
 		
 		if (user.length() > 0)
 			updateAccount.setUser(user);
@@ -265,10 +303,11 @@ public class Cmd {
 		if (url.length() > 0)
 			updateAccount.setUrl(url);
 		
-		if (!pass.equals(updateAccount.getOldPass()))
+		if (!pass.equals(updateAccount.getPass())) {
 			updateAccount.setOldPass(updateAccount.getPass());
+			updateAccount.setPass(pass);
+		}
 		
-		updateAccount.setPass(pass);
 		updateAccount.setUpdateTime(System.currentTimeMillis());
 		
 		switch (storeType) {
@@ -434,6 +473,7 @@ public class Cmd {
 		switch (storeType) {
 		case CBL_STORE:
 			cblStore.deleteAccount(removeAccount);
+			mruComparator.accountRemoved(removeAccount.getName());
 			break;
 		case DAT_FILE:
 			Utils.saveAccounts(dataFile, key, accounts);
@@ -445,6 +485,12 @@ public class Cmd {
 		
 		p("Account Removed");
 		
+	}
+	
+	
+	// Do any persistence or cleanup
+	public void shutDown() {
+		mruComparator.saveAccessMap(cblStore);
 	}
 	
 	
@@ -467,6 +513,61 @@ public class Cmd {
 		} else {
 			p("Browser launch not supported on this platform");
 		}
+	}
+	
+	
+	private boolean changeInvalidKey(Account account) {
+		p("Accounts whose passwords could not be decrypted can't be updated and their passwords can't");
+		p(" be retrieved. They can either be deleted or another key can be entered to try to decrypt");
+		p(" the password.");
+		p("");
+		p(" 1. Try entering another key");
+		p(" 2. Delete account");
+		p(" 3. Cancel");
+		p("");
+		String choice = System.console().readLine("Enter choice: ");
+		
+		if (choice.equalsIgnoreCase("1")) {
+			String key = new String(System.console().readPassword("Enter key: "));
+			String password = null;
+			String oldPassword = null;
+			
+			try {
+				key = AESEngine.finalizeKey(key, AESEngine.KEY_LENGTH_256);
+				//password = AESEngine.getInstance().decryptString(key, account.getPass());
+				password = AESEngine.getInstance().decryptBytes(key, cblStore.decodeString(account.getPass()));
+				oldPassword = AESEngine.getInstance().decryptBytes(key, cblStore.decodeString(account.getOldPass()));
+			} catch (Exception e) {
+				p(" Error trying decrypt password: " + e.getMessage());
+				e.printStackTrace();
+			}
+			
+			if (password != null) {
+				account.setPass(password);
+
+				if (oldPassword != null)
+					account.setOldPass(oldPassword);
+				
+				account.setValidEncryption(true);
+				//cblStore.saveAccount(account, key);
+				cblStore.saveAccount(account);
+				return true;
+			} else {
+				p("Unable to decrypt password with entered key");
+				return false;
+			}
+			
+		} else if (choice.equalsIgnoreCase("2")) {
+			
+			if (accounts.remove(account)) {
+				account.setUpdateTime(System.currentTimeMillis());
+				cblStore.deleteAccount(account);
+			} else {
+				p("Unable to remove account: " + account.getName());
+			}
+		} 
+		
+		return false;
 	}
 	
 	

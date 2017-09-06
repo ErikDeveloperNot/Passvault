@@ -27,7 +27,7 @@ PURGE_DELETES=false
 
 ## registration server
 #REG_SERVER=localhost:8443
-REG_SERVER=ec2-52-53-254-139.us-west-1.compute.amazonaws.com:8443
+REG_SERVER=ec2-13-56-39-109.us-west-1.compute.amazonaws.com:8443
 
 ## extra java options
 #JAVA_OPTS="-Djavax.net.debug=all"

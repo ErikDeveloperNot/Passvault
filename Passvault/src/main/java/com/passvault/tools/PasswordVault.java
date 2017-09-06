@@ -102,6 +102,7 @@ try {
 				break;
 			case "8":
 				running = false;
+				cmd.shutDown();
 				break;
 			default:
 				p("Invalid Selection, enter [1-8]");

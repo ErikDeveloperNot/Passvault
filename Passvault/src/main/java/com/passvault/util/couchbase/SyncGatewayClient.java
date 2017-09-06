@@ -39,6 +39,7 @@ public class SyncGatewayClient {
 	public static final int DEFAULT_PORT = 4984;
 	public static final String DEFAULT_BUCKET = "passvault";
 	public static final String DEFAULT_PROTOCOL = "http";
+	private static final String INTERNAL_PREFIX = "__";
 	
 	private static boolean liverQueryRunning = false;
 	private static boolean changeListenerRunning = false;
@@ -144,7 +145,7 @@ String accountUUID = Utils.getAccountUUID();
 Map<String, Object> params = new HashMap();
 params.put("accountUUID", accountUUID);
 
-		// only send docs with the current accountUUID
+		// only send docs with the current accountUUID and dont start with '__'
 		database.setFilter("accountUUIDFilter", new ReplicationFilter() {
 					
 			@Override
@@ -152,8 +153,10 @@ params.put("accountUUID", accountUUID);
 				String accountUUID = (String) params.get("accountUUID");
 				String docID = revision.getDocument().getId();
 				logger.finest("doc id=" + docID + ", " + accountUUID + " returning: " +
-						(docID.contains(accountUUID) ? true : false));
-				return docID.contains(accountUUID) ? true : false;
+						(docID.contains(accountUUID) ? true : false) + ", internal __ = " +
+						(docID.startsWith(INTERNAL_PREFIX) ? true : false));
+				return (docID.contains(accountUUID) ? true : false)  &&
+						(!docID.startsWith(INTERNAL_PREFIX));
 			}
 		});
 		

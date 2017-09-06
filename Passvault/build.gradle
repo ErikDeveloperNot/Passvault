@@ -42,7 +42,8 @@ task buildProduction {
 task createRelease(type: Zip) {
     dependsOn 'buildProduction'
     tasks.findByName('createRelease').mustRunAfter 'buildProduction'
-
+    archiveName = 'passvault-' + version + '.zip'
+    
     from(buildDirProd) {
         exclude 'dist/**'
     }

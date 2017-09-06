@@ -2,6 +2,7 @@ package com.passvault.util.couchbase;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 //import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,6 +24,7 @@ import com.couchbase.lite.UnsavedRevision;
 import com.passvault.crypto.AESEngine;
 import com.passvault.crypto.CryptEngine;
 import com.passvault.util.Account;
+import com.passvault.util.MRUComparator;
 import com.passvault.util.Utils;
 
 import android.util.Base64;
@@ -36,6 +38,7 @@ public class CBLStore {
 	protected String accountUUID;
 	
 	private static Logger logger;
+	private static String ACCESS_MAP_DTYPE = "access_map";
 	public static enum DatabaseFormat {SQLite, ForestDB}
 	
 	
@@ -164,9 +167,14 @@ public class CBLStore {
 	
 	
 	public void saveAccount(Account account) {
+		saveAccount(account, encryptionKey);
+	}
+	
+	
+	public void saveAccount(Account account, String key) {
 		List<Account> addAccount = new ArrayList<>();
 		addAccount.add(account);
-		saveAccounts(addAccount); //, accountUUID);
+		saveAccounts(addAccount, key); //, accountUUID);
 	}
 	
 	/*
@@ -184,7 +192,12 @@ public class CBLStore {
 	*/
 	
 	
-	public void saveAccounts(List<Account> accounts) { //, String _accountUUID) {
+	public void saveAccounts(List<Account> accounts) {
+		saveAccounts(accounts, encryptionKey);
+	}
+	
+	
+	public void saveAccounts(List<Account> accounts, String key) { //, String _accountUUID) {
 		
 		CryptEngine aesEngine = AESEngine.getInstance();
 		logger.fine("Saving " + accounts.size() + " accounts");
@@ -195,10 +208,19 @@ public class CBLStore {
 			
 				content.put("AccountName", account.getName());
 				content.put("UserName", account.getUser());
-				content.put("Password", 
-						new String(encodeBytes(aesEngine.encryptString(encryptionKey, account.getPass()))));
-				content.put("OldPassword", 
-						new String(encodeBytes(aesEngine.encryptString(encryptionKey, account.getOldPass()))));
+				
+				if (account.isValidEncryption()) {
+					content.put("Password", 
+							new String(encodeBytes(aesEngine.encryptString(key, account.getPass()))));
+					content.put("OldPassword", 
+							new String(encodeBytes(aesEngine.encryptString(key, account.getOldPass()))));
+				} else {
+					logger.warning("Saving account: " + account.getName() + ", but password couldn't be decrypted.");
+					content.put("Password", account.getPass());
+					content.put("OldPassword", account.getOldPass());
+				}
+				
+				
 				content.put("UpdateTime", account.getUpdateTime());
 				//content.put("AccountUUID", account.getAccountUUID());
 				content.put("AccountUUID", accountUUID);
@@ -245,7 +267,12 @@ public class CBLStore {
 			QueryRow queryRow = null;
 			
 			while ((queryRow = enumerator.next()) != null) {
+				boolean decrypted = true;
+				
 				Document document = queryRow.getDocument();
+				
+				if (document.getProperty("doc_type") != null)
+					continue;
 				
 				String _accountUUID = (String)document.getProperty("AccountUUID");
 				logger.finest("Retrieved account UUID from document: " + _accountUUID);
@@ -259,10 +286,31 @@ public class CBLStore {
 				
 				String accountName = (String)document.getProperty("AccountName");
 				String userName = (String)document.getProperty("UserName");
-				String password = aesEngine.decryptBytes(encryptionKey,
-						decodeString(((String)document.getProperty("Password"))));
-				String oldPassword = aesEngine.decryptBytes(encryptionKey,
-						decodeString(((String)document.getProperty("OldPassword"))));
+				
+				String password = null;
+				String oldPassword = null;
+				
+				try {
+					password = aesEngine.decryptBytes(encryptionKey,
+							decodeString(((String)document.getProperty("Password"))));
+					oldPassword = aesEngine.decryptBytes(encryptionKey,
+							decodeString(((String)document.getProperty("OldPassword"))));
+				} catch (Exception e) {
+					/*
+					 * if password can't be decrypted mark account, if old password can't be decrypted
+					 * chz around it by making current password the old one 
+					 */
+					if (password == null) {
+						password = (String)document.getProperty("Password");
+						oldPassword = (String)document.getProperty("OldPassword");
+						decrypted = false;
+						logger.warning("Unable to decrypt current password with Key, marking account: " + accountName);
+					} else {
+						oldPassword = password;
+						logger.warning("Unable to decrypt old password, replacing with current password for account: " +
+								accountName);
+					}
+				}
 				
 				long updateTime;
 				Object updateObj = document.getProperty("UpdateTime");
@@ -291,17 +339,21 @@ public class CBLStore {
 				*/
 				
 				logger.finest("Adding account: " + accountName);
-				accounts.add(new Account(accountName, userName, password, oldPassword, _accountUUID, updateTime,
-						(url != null) ? url : ""));
+				Account account = new Account(accountName, userName, password, oldPassword, _accountUUID, updateTime,
+						(url != null) ? url : "");
+				accounts.add(account);
+				
+				if (!decrypted)
+					account.setValidEncryption(false);
 			}
 			
 		} catch (CouchbaseLiteException e) {
 			logger.log(Level.WARNING, "Error loading accounts: " + e.getMessage(), e);
 			e.printStackTrace();
-		} catch (Exception e) {
+		} /*catch (Exception e) {
 			logger.log(Level.WARNING, "Error loading accounts: " + e.getMessage(), e);
 			throw e;
-		}
+		}*/
 
 	}
 	
@@ -436,5 +488,60 @@ public class CBLStore {
 		}
 	}
 	
+	
+	public void saveAccessMap(Collection<MRUComparator.AccountAccessMap> values) {
+		logger.info("Saving AccessMap");
+		final Map saveDoc = new HashMap<>();
+		saveDoc.put("docType", ACCESS_MAP_DTYPE);
+		saveDoc.put("accounts", values);
+		Document mapDoc = database.getDocument("__access_map");
+		
+		try {
+		if (mapDoc.getCurrentRevisionId() != null) {
+			mapDoc.update(new Document.DocumentUpdater() {
+				
+				@Override
+				public boolean update(UnsavedRevision arg0) {
+					arg0.setUserProperties(saveDoc);
+					return true;
+				}
+			});
+		} else {
+			mapDoc.putProperties(saveDoc);
+		}
+		} catch(CouchbaseLiteException e) {
+			logger.warning("Error saving AccessMap: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	
+	public Collection loadAccessMap() {
+		logger.info("Loading AccessMap");
+		Query query = database.createAllDocumentsQuery();
+		Collection toReturn = null;
+		
+		try {
+			QueryEnumerator enumerator = query.run();
+			QueryRow queryRow = null;
+			//System.out.println("Count = " +enumerator.getCount());
+			
+			while ((queryRow = enumerator.next()) != null) {
+				Document document = queryRow.getDocument();
+				
+				if (document.getProperty("docType") != null && document.getProperty("docType").equals(ACCESS_MAP_DTYPE)) {
+					logger.fine("Retrieved AccessMap from database");
+					toReturn = (Collection) document.getProperty("accounts");
+				}
+			}
+			
+		} catch (CouchbaseLiteException e) {
+			logger.warning("Error loading AccessMap: " + e.getMessage());
+			e.printStackTrace();
+		}
+		
+		//logger.info("Retruning AccessMap of size: " + map.size());
+		return toReturn;
+	}
 	
 }

@@ -12,6 +12,7 @@ public class Account implements Comparable<Account>, Serializable {
 	private String accountUUID;
 	private long updateTime;
 	private String url;
+	private boolean validEncryption;
 	
 	public static final String BLANK_PASSWORD = "\t";
 	
@@ -28,11 +29,21 @@ public class Account implements Comparable<Account>, Serializable {
 		this.updateTime = updateTime;
 		this.accountUUID = accountUUID;
 		this.setUrl(url);
+		validEncryption = true;
 	}
 	
-	
+
 	public Account(String name, String user, String pass, String oldPass, String accountUUID, long updateTime) {
 		this(name, user, pass, oldPass, accountUUID, updateTime, "");
+	}
+
+	
+	public boolean isValidEncryption() {
+		return validEncryption;
+	}
+
+	public void setValidEncryption(boolean validEncryption) {
+		this.validEncryption = validEncryption;
 	}
 	
 	public String getAccountUUID() {
