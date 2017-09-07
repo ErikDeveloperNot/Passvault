@@ -70,8 +70,9 @@ public class MRUComparator implements Comparator<Account> {
 				for (Object mapValue : mapAsObject) 
 					map[i++] = (Integer)mapValue;
 			
+				map = shiftMap(mraTime, map);
 				accountAccessMaps.put(name, new AccountAccessMap(name, mraTime, map));
-				logger.finest("Account: " + name + " loaded, last mraTime: " + new Date(mraTime) + "\n" + map);
+				logger.finest("Account: " + name + " loaded, last mraTime: " + new Date(mraTime) + "\n" + printMap(map));
 			}
 		} 
 	}
@@ -146,7 +147,7 @@ public class MRUComparator implements Comparator<Account> {
 		logger.fine("Number to shift: " + numberToShift + ", size: " + size + ", shift map: " + (numberToShift > 0));
 		
 		if (numberToShift > 0) {
-			logger.finest("Current map: \n" + map);
+			logger.finest("Current map: \n" + printMap(map));
 			
 			if (numberToShift < size) {
 				int startIndex = size - numberToShift - 1;
@@ -162,7 +163,7 @@ public class MRUComparator implements Comparator<Account> {
 			}
 		}
 			
-		logger.finest("Returning map:\n" + map);
+		logger.finest("Returning map:\n" + printMap(map));
 		return map;
 	}
 	
