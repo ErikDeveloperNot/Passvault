@@ -3,6 +3,8 @@ package com.passvault.util;
 import java.io.Serializable;
 import java.net.URI;
 
+import javax.security.auth.login.AccountNotFoundException;
+
 public class Account implements Comparable<Account>, Serializable {
 
 	private String name;
@@ -114,6 +116,9 @@ public class Account implements Comparable<Account>, Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		
 		if (((Account)obj).getName().equalsIgnoreCase(name))
 			return true;
 		else 
@@ -132,6 +137,13 @@ public class Account implements Comparable<Account>, Serializable {
 			url = "http://" + url;
 		
 		this.url = url;
+	}
+
+
+	@Override
+	public String toString() {
+		// simplest way to do FX listcell
+		return name;
 	}
 	
 	

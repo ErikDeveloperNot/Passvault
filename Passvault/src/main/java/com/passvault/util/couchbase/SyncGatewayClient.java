@@ -4,7 +4,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -130,6 +132,7 @@ public class SyncGatewayClient {
 	}
 	
 	
+	
 	public void sync() {
 		URL url = null;
 		
@@ -144,6 +147,7 @@ public class SyncGatewayClient {
 String accountUUID = Utils.getAccountUUID();
 Map<String, Object> params = new HashMap();
 params.put("accountUUID", accountUUID);
+
 
 		// only send docs with the current accountUUID and dont start with '__'
 		database.setFilter("accountUUIDFilter", new ReplicationFilter() {

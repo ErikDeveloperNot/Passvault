@@ -22,6 +22,12 @@ public class Upgrade {
 
 	}
 	
+	
+	private static void upgradeKey() {
+		char[] key = System.console().readPassword("Enter encrypt/decrypt key:");
+		
+	}
+	
 	private static void upgradeToCBL() {
 		
 		char[] key = System.console().readPassword("Enter encrypt/decrypt key:");

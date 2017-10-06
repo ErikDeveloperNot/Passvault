@@ -3,6 +3,7 @@ package com.passvault.util;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -15,9 +16,13 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 	private static Logger logger;
 	protected List<Character> allowedCharacters;
 	protected int length;
-	protected boolean lower, upper, special, digits;
+	protected boolean checkLower, checkUpper, checkSpecial, checkDigits;
 	
 	protected char[] specials = {'@', '_', '$', '&', '!', '?', '*', '-'};
+	private char[] defaultLower;
+	private char[] defaultUpper;
+	private char[] defaultDigits;
+	private char[] defaultSpecial;
 	
 	static {
 		logger = Logger.getLogger("com.passvault.util");
@@ -33,30 +38,47 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 		super();
 		
 		this.length = length;
-		this.lower = lower;
-		this.upper = upper;
-		this.special = special;
-		this.digits = digits;
+		this.checkLower = lower;
+		this.checkUpper = upper;
+		this.checkSpecial = special;
+		this.checkDigits = digits;
 		allowedCharacters = new ArrayList<>();
 		
 		//set allowed lowercase
-		if (lower)
-			for (int x=((int)'a'); x<=((int)'z'); x++)
+		if (lower) {
+			defaultLower = new char[26];
+			
+			for (int x=((int)'a'), j=0; x<=((int)'z'); x++, j++) {
 				allowedCharacters.add((char)x);
+				defaultLower[j] = (char)x;
+			}
+		}
 		
 		//set allowed uppercase
-		if (upper)
-			for (int x=((int)'A'); x<=((int)'Z'); x++)
+		if (upper) {
+			defaultUpper = new char[26];
+			
+			for (int x=((int)'A'), j=0; x<=((int)'Z'); x++, j++) {
 				allowedCharacters.add((char)x);
+				defaultUpper[j] = (char)x;
+			}
+		}
 		
 		//set allowed numbers
-		if (digits)
-			for (int x=((int)'0'); x<=((int)'9'); x++)
+		if (digits) {
+			defaultDigits = new char[10];
+			
+			for (int x=((int)'0'), j=0; x<=((int)'9'); x++, j++) {
 				allowedCharacters.add((char)x);
+				defaultDigits[j] = (char)x;
+			}
+		}
 		
 		//set allowed special characters
 		if (special) {
 			char[] c = {'@', '_', '$', '&', '!', '?', '*', '-'};
+			defaultSpecial = c;
+			
 			for (char d : c) {
 				allowedCharacters.add(d);
 			}
@@ -173,14 +195,14 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 		public void checkValue(char value) {
 			int check = (int)value;
 			
-			if (lower && check >= (int)'a' && check <= (int)'z') {
+			if (checkLower && check >= (int)'a' && check <= (int)'z') {
 				lowerMet = true;
-			} else if (upper && check >= (int)'A' && check <= (int)'Z') {
+			} else if (checkUpper && check >= (int)'A' && check <= (int)'Z') {
 				upperMet = true;
-			} else if (digits && check >= (int)'0' && check <= (int)'9') {
+			} else if (checkDigits && check >= (int)'0' && check <= (int)'9') {
 				digitMet = true;
 			} else {
-				if (special && allowedCharacters.contains((char)check)) {
+				if (checkSpecial && allowedCharacters.contains((char)check)) {
 					specialMet = true;
 				}
 			}
@@ -191,20 +213,101 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 			boolean keepChecking = true;
 			//System.out.println("lower="+lowerMet+",upper="+upperMet+",digit="+digitMet+",special="+specialMet);;
 			
-			if (lower)
+			if (checkLower)
 				keepChecking = lowerMet ? true : false;
 			
-			if (keepChecking && upper)
+			if (keepChecking && checkUpper)
 				keepChecking = upperMet ? true : false;
 			
-			if (keepChecking && digits)
+			if (keepChecking && checkDigits)
 				keepChecking = digitMet ? true : false;
 			
-			if (keepChecking && special)
+			if (keepChecking && checkSpecial)
 				keepChecking = specialMet ? true : false;
 			
 			return keepChecking ? true : false;
 		}
 		
+	}
+
+
+	public int getLength() {
+		return length;
+	}
+
+	public void setLength(int length) {
+		this.length = length;
+	}
+
+	public char[] getDefaultLower() {
+		return defaultLower;
+	}
+
+	public char[] getDefaultUpper() {
+		return defaultUpper;
+	}
+
+	public char[] getDefaultDigits() {
+		return defaultDigits;
+	}
+
+	public char[] getDefaultSpecial() {
+		return defaultSpecial;
+	}
+	
+	public void clearAllowedCharacters() {
+		allowedCharacters.clear();
+	}
+	
+	public void setAllowedCharacters(Collection<Character> c) {
+		allowedCharacters.addAll(c);
+	}
+	/*
+	public void checkLower(boolean check) {
+		checkLower = check;
+	}
+	
+	public void checkUpper(boolean check) {
+		checkUpper = check;
+	}
+	
+	public void checkDigits(boolean check) {
+		checkDigits = check;
+	}
+	
+	public void checkSpecial(boolean check) {
+		checkSpecial = check;
+	}
+	*/
+	public boolean isCheckLower() {
+		return checkLower;
+	}
+
+	public void setCheckLower(boolean checkLower) {
+		this.checkLower = checkLower;
+	}
+
+	public boolean isCheckUpper() {
+		return checkUpper;
+	}
+
+	public void setCheckUpper(boolean checkUpper) {
+		this.checkUpper = checkUpper;
+	}
+
+	public boolean isCheckSpecial() {
+		return checkSpecial;
+	}
+
+	public void setCheckSpecial(boolean checkSpecial) {
+		this.checkSpecial = checkSpecial;
+	}
+
+	public boolean isCheckDigits() {
+		return checkDigits;
+	}
+
+	public void setCheckDigits(boolean checkDigits) {
+		this.checkDigits = checkDigits;
 	}
 }

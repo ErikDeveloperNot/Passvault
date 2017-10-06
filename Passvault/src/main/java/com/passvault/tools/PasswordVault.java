@@ -31,6 +31,19 @@ public class PasswordVault {
 
 	
 	public PasswordVault(String key, String storeType, String file) {
+/*
+String oldKey = null;
+String newKey = null;
+CBLStore store = null;
+try {
+	newKey = AESEngine.finalizeKey(key, KEY_SIZE_FACTOR);
+	key = AESEngine.finalizeKeyOld(key, KEY_SIZE_FACTOR);
+	
+} catch (Exception e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+}
+*/
 		logger.info("Starting Passvault");
 		//accounts = new ArrayList<>();
 		accounts = Collections.synchronizedList(new ArrayList<Account>());
@@ -39,6 +52,7 @@ public class PasswordVault {
 		
 		if (storeType.equalsIgnoreCase("cbl")) {
 			CBLStore cblStore = new CBLStore(file, CBLStore.DatabaseFormat.SQLite, key);
+//store = cblStore;
 			logger.fine("Using Couchbase Lite for persistence");
 			cmd = new Cmd(accounts, key, cblStore);
 		} else {
@@ -47,6 +61,7 @@ public class PasswordVault {
 		}
 		
 		loadAccounts();
+//store.saveAccounts(accounts, newKey);
 
 /*	
 //used when changing key size from 16 to 32	
@@ -144,6 +159,7 @@ try {
 				String storeType = args[1];
 //userName=args[2];				
 				if (storeType.equalsIgnoreCase("cbl")) {
+//new PasswordVault(unPaddedKey, "cbl", args[0]);
 					new PasswordVault(AESEngine.finalizeKey(unPaddedKey, KEY_SIZE_FACTOR), "cbl", args[0]);
 				} else {
 					new PasswordVault(AESEngine.finalizeKey(unPaddedKey, KEY_SIZE_FACTOR), "file", args[0]);

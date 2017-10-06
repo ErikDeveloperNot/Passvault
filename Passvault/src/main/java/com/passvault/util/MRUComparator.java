@@ -75,6 +75,8 @@ public class MRUComparator implements Comparator<Account> {
 				logger.finest("Account: " + name + " loaded, last mraTime: " + new Date(mraTime) + "\n" + printMap(map));
 			}
 		} 
+		
+		mruComaparater = this;
 	}
 	
 	

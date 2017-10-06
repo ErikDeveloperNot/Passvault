@@ -216,10 +216,47 @@ public class AESEngine implements CryptEngine {
 		}
 		
 		logger.info("Returning key of length: " + key.length());
-//System.out.println("key=\"" + key + "\"");
 		return key;
 	}
 
+	/*
+	public static String finalizeKeyOld(String key, int length) throws Exception {
+		int amountToPad = 0;
+		logger.info("finalizing key of length: " + key.length() + ", to a key length of: " + length);
+		
+		switch (length) {
+		case KEY_LENGTH_192:
+		case KEY_LENGTH_128:
+		case KEY_LENGTH_256:	
+		//case KEY_LENGTH_512:
+		
+			
+			if (key.length() > length) 
+				amountToPad = length - key.length();
+			else if (key.length() < length)
+				amountToPad = length - key.length();
+			
+			logger.finest("Amount to pad key: " + amountToPad);
+
+			break;
+		default:
+			throw new InvalidSpecifiedKeyLengthException();
+		}
+		
+		if (amountToPad > 0) {
+			// zero padded
+			for (int i=0; i<amountToPad; i++)
+				key += "0";
+		
+		} else if (amountToPad < 0) {
+			key = key.substring(0, key.length() - amountToPad*-1);
+		}
+		
+		logger.info("Returning key of length: " + key.length());
+		return key;
+	}
+	*/
+	
 
 	public static CryptEngine getInstance() {
 		logger.finest("Returning new instance of AESEngine");

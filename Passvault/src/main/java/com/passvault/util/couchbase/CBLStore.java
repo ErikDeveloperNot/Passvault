@@ -148,9 +148,11 @@ public class CBLStore {
 		
 		synchronized (accounts) {
 			for (Account account : accounts) {
+				Account toAdd = new Account(account.getName(), account.getUser(), account.getPass(), 
+						account.getOldPass(), uuid, account.getUpdateTime(), account.getUrl());
+				toAdd.setValidEncryption(account.isValidEncryption());
 				deleteAccounts.add(account.getName());
-				newAccounts.add(new Account(account.getName(), account.getUser(), account.getPass(), 
-						account.getOldPass(), uuid, account.getUpdateTime(), account.getUrl()));
+				newAccounts.add(toAdd);
 			}
 		}
 		
@@ -255,9 +257,9 @@ public class CBLStore {
 			}
 		}
 	}
+
 	
-	
-	public void loadAccounts(List<Account> accounts) throws Exception {
+	public void loadAccounts(List<Account> accounts) {//throws Exception {
 		Query query = database.createAllDocumentsQuery();
 		CryptEngine aesEngine = AESEngine.getInstance();
 		logger.fine("Loading accounts");
@@ -271,7 +273,7 @@ public class CBLStore {
 				
 				Document document = queryRow.getDocument();
 				
-				if (document.getProperty("doc_type") != null)
+				if (document.getProperty("docType") != null)
 					continue;
 				
 				String _accountUUID = (String)document.getProperty("AccountUUID");

@@ -1,5 +1,7 @@
 package com.passvault.util.model;
 
+import java.util.Map;
+
 public class Gateway {
 
 	/*
@@ -18,7 +20,20 @@ public class Gateway {
 	private String password;
 	private int port;
 	
+	public Gateway() {
+		
+	}
 	
+	public Gateway(Map<String, Object> values) {
+		if (values != null) {
+			server = (String)values.get("server");
+			bucket = (String)values.get("bucket");
+			protocol = (String)values.get("protocol");
+			userName = (String)values.get("userName");
+			password = (String)values.get("password");
+			port = (Integer)values.get("port");
+		}
+	}
 	
 	@Override
 	public String toString() {

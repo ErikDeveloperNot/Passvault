@@ -3,6 +3,7 @@ package com.passvault.ui.text;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -382,7 +383,7 @@ public class SyncCmd {
 	
 	private void sync(Gateway gateway) {
 		SyncGatewayClient.ReplicationStatus status = null;
-	
+		
 		System.out.print("\nSyncing.");
 		logger.info("Syncing with server: " + gateway.getServer() + ", protocol: " + gateway.getProtocol() +
 				", port: " + gateway.getPort() + ", bucket: " + gateway.getBucket());
