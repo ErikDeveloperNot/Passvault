@@ -15,21 +15,28 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.passvault.crypto.AESEngine;
 import com.passvault.util.Account;
 import com.passvault.util.Utils;
-import com.passvault.util.couchbase.AccountsChanged;
-import com.passvault.util.couchbase.CBLStore;
-import com.passvault.util.couchbase.SyncGatewayClient;
+import com.passvault.util.data.Store;
+import com.passvault.util.data.couchbase.CBLStore;
+import com.passvault.util.data.file.JsonStore;
+//import com.passvault.util.data.couchbase.SyncGatewayClient;
 import com.passvault.util.model.Gateway;
 import com.passvault.util.model.Gateways;
 import com.passvault.util.register.RegisterAccount;
+import com.passvault.util.register.RegisterAccount.StoreType;
+import com.passvault.util.sync.AccountsChanged;
+import com.passvault.util.sync.ReplicationStatus;
 import com.passvault.util.register.RegisterResponse;
 
 public class SyncCmd {
 
 	private AccountsChanged accountsChanged;
-	private CBLStore cblStore;
+	private Store dataStore;
 	private List<Account> accounts;
+	private StoreType storeType;
 	private static String key;
 	private static Logger logger;
+	
+	
 	
 	static {
 		logger = Logger.getLogger("com.passvault.ui.text");
@@ -41,9 +48,18 @@ public class SyncCmd {
 		}
 	}
 	
-	public SyncCmd(CBLStore cblStore, AccountsChanged accountsChanged, List<Account> accounts) {
+	public SyncCmd(Store dataStore, AccountsChanged accountsChanged, List<Account> accounts) {
 		this.accountsChanged = accountsChanged;
-		this.cblStore = cblStore;
+		this.dataStore = dataStore;  
+		
+		if (dataStore instanceof JsonStore) {
+			storeType = StoreType.JSON;
+		} else if (dataStore instanceof CBLStore) {
+			storeType = StoreType.CBL;
+		} else {
+			storeType = StoreType.DATA;
+		}
+		
 		this.accounts = accounts;
 		run();
 	}
@@ -77,6 +93,11 @@ public class SyncCmd {
 	
 	private void syncWithLocal() {
 		Gateway[] gateways = null;
+		
+		if (storeType == StoreType.JSON) {
+			Cmd.p("Syncing with a local service is not supported with the Json store");
+			run();
+		}
 		
 		try {
 			gateways = loadSyncConfig("local");
@@ -157,7 +178,10 @@ public class SyncCmd {
 		Gateway[] gateways = null;
 		
 		try {
-			gateways = loadSyncConfig("remote");
+			if (storeType == StoreType.CBL)
+				gateways = loadSyncConfig("remote");
+			else
+				gateways = loadSyncConfig("json");
 		} catch (Exception e) {
 			System.err.println("\nError Loading Sync Gateway Config: " + e.getMessage());
 			logger.log(Level.WARNING, "Error Loading Sync Gateway Config: " + e.getMessage(), e);
@@ -183,13 +207,15 @@ public class SyncCmd {
 				return;
 			}
 			
-			RegisterAccount registerAccount = new RegisterAccount();
+			RegisterAccount registerAccount = new RegisterAccount(storeType);
 			RegisterResponse regResp;
 			
 			
 			if (choice.equalsIgnoreCase("1")) {
 				logger.info("Sending new registration request for email: " + email);
+				
 				regResp = registerAccount.registerV1(email, new String(pass));
+					
 			} else {
 				regResp = registerAccount.getGatewatConfig();
 				logger.info("Retrieving remote gateway configuration");
@@ -211,9 +237,10 @@ public class SyncCmd {
 	        			Cmd.p(regResp.getMessage());
 	        			logger.info("Saving gateway config");
 	        			saveRemoteGateway(remoteGateway);
+	        				
 	        			// use email instead of a UUID for v1
 	        			logger.fine("Updating AccountUUID");
-	        			cblStore.updateAccountUUID(accounts, email);
+	        			dataStore.updateAccountUUID(accounts, email);
 	        		} else {
 	        			Cmd.p("Error: Failed to retrieve gateway configuration\n" + regResp.getError());
 	        			logger.warning("Failed to retrieve gateway configuration: " + regResp.getError());
@@ -245,7 +272,7 @@ public class SyncCmd {
 			} else if (choiceInt == 2) {
 				// Delete account
 				logger.info("Deleting free service account");
-				RegisterResponse regResp = new RegisterAccount().deleteAccount(gateways[0].getUserName(),
+				RegisterResponse regResp = new RegisterAccount(storeType).deleteAccount(gateways[0].getUserName(),
 						gateways[0].getPassword());
 				
 				if (regResp.success()) {
@@ -258,13 +285,14 @@ public class SyncCmd {
 				
 				// even if the delete fails still remove config and rest AccountUUID
 				logger.fine("Updating AccountUUID");
-				cblStore.updateAccountUUID(accounts, "");
+				dataStore.updateAccountUUID(accounts, "");
 				logger.info("Saving gateway config");
+				
 				saveRemoteGateway(null);
 			} else {
 				logger.info("Removing free service account");
 				logger.fine("Updating AccountUUID");
-				cblStore.updateAccountUUID(accounts, "");
+				dataStore.updateAccountUUID(accounts, "");
 				logger.info("Saving gateway config");
 				saveRemoteGateway(null);
 			}
@@ -382,7 +410,8 @@ public class SyncCmd {
 	
 	
 	private void sync(Gateway gateway) {
-		SyncGatewayClient.ReplicationStatus status = null;
+		//SyncGatewayClient.ReplicationStatus status = null;
+		ReplicationStatus status = null;
 		
 		System.out.print("\nSyncing.");
 		logger.info("Syncing with server: " + gateway.getServer() + ", protocol: " + gateway.getProtocol() +
@@ -390,11 +419,11 @@ public class SyncCmd {
 					
 		if (gateway.getUserName() == null || gateway.getUserName().equalsIgnoreCase("")) {
 			// use guest account
-			status = cblStore.syncAccounts(gateway.getServer(), gateway.getProtocol(), gateway.getPort(), 
+			status = dataStore.syncAccounts(gateway.getServer(), gateway.getProtocol(), gateway.getPort(), 
 						gateway.getBucket(), accountsChanged);
 		} else {	
 			// use credentials
-			status = cblStore.syncAccounts(gateway.getServer(), gateway.getProtocol(), gateway.getPort(), 
+			status = dataStore.syncAccounts(gateway.getServer(), gateway.getProtocol(), gateway.getPort(), 
 					gateway.getBucket(), gateway.getUserName(), gateway.getPassword(), accountsChanged);
 		}
 					
@@ -548,7 +577,11 @@ public class SyncCmd {
 				gateways = new Gateways();
 			}
 			
-			gateways.setRemote(gateway);  //only allow 1 remote definition so overwirte if exists
+			if (storeType == StoreType.CBL)
+				gateways.setRemote(gateway);  //only allow 1 remote definition so overwirte if exists
+			else 
+				gateways.setJson(gateway);
+			
 			encryptPasswords(gateways);
 			objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 			objectMapper.writeValue(new File("./.password_vault_sync.json"), gateways);
@@ -641,6 +674,15 @@ public class SyncCmd {
 			}
 			
 			return null;
+		case "json":
+			// with json still use the Gateway model type for ease, just ignore some properties
+			Gateway json = gateWays.getJson();
+			
+			if (json != null) {
+				return new Gateway[] {json};
+			}
+			
+			return null;
 		default:
 			break;
 		}
@@ -653,15 +695,22 @@ public class SyncCmd {
 		Gateway remote = gateways.getRemote();
 		
 		if (remote != null) {
-			remote.setPassword(new String(cblStore.encodeBytes(AESEngine.getInstance()
+			remote.setPassword(new String(dataStore.encodeBytes(AESEngine.getInstance()
 					.encryptString(key, remote.getPassword()))));
+		}
+		
+		Gateway json = gateways.getJson();
+		
+		if (json != null) {
+			json.setPassword(new String(dataStore.encodeBytes(AESEngine.getInstance()
+					.encryptString(key, json.getPassword()))));
 		}
 		
 		Gateway[] local = gateways.getLocal();
 		
 		if (local != null) {
 			for (Gateway gateway : local) {
-				gateway.setPassword(new String(cblStore.encodeBytes(AESEngine.getInstance()
+				gateway.setPassword(new String(dataStore.encodeBytes(AESEngine.getInstance()
 						.encryptString(key, gateway.getPassword()))));
 			}
 		}
@@ -679,6 +728,20 @@ public class SyncCmd {
 			} catch (Exception e) {
 				System.err.println("Error decrypting password for remote service, " + e.getMessage());
 				logger.log(Level.WARNING, "Error decrypting password for remote service, " + e.getMessage(), e);
+				e.printStackTrace();
+			}
+		}
+		
+		Gateway json = gateways.getJson();
+		
+		if (json != null) {
+
+			try {
+				json.setPassword(AESEngine.getInstance()
+						.decryptBytes(key, Utils.decodeString(json.getPassword())));
+			} catch (Exception e) {
+				System.err.println("Error decrypting password for json service, " + e.getMessage());
+				logger.log(Level.WARNING, "Error decrypting password for json service, " + e.getMessage(), e);
 				e.printStackTrace();
 			}
 		}

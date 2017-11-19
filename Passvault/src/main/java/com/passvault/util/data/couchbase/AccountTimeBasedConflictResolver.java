@@ -1,4 +1,4 @@
-package com.passvault.util.couchbase;
+package com.passvault.util.data.couchbase;
 
 import java.util.List;
 import java.util.logging.Logger;

@@ -13,7 +13,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
 
-import com.passvault.util.couchbase.CBLStore;
+import com.passvault.util.data.Store;
+import com.passvault.util.data.couchbase.CBLStore;
+import com.passvault.util.data.file.JsonStore;
 
 public class MRUComparator implements Comparator<Account> {
 
@@ -25,7 +27,7 @@ public class MRUComparator implements Comparator<Account> {
 	 * interval taking precedence
 	 */
 	
-	private static final int[] INTERVALS = {7, 14, 35};
+	protected static final int[] INTERVALS = {7, 14, 35};
 	private static final long DAY = 86_400_000;
 	private static Logger logger;
 	
@@ -33,7 +35,7 @@ public class MRUComparator implements Comparator<Account> {
 	private long CURRENT_DAY;
 	private Map<String, AccountAccessMap> accountAccessMaps;
 	private boolean reverse;
-	private CBLStore cblStore;
+	private Store dataStore;
 	
 	
 	static {
@@ -50,25 +52,36 @@ public class MRUComparator implements Comparator<Account> {
 	}
 	
 	
-	public MRUComparator(CBLStore cblStore) {
-		this.cblStore = cblStore;
+	public MRUComparator(Store dataStore) {
+		this.dataStore = dataStore;
 		CURRENT_DAY = getDay();
-		Collection accounts = cblStore.loadAccessMap();
+		Collection accounts = dataStore.loadAccessMap();
 		accountAccessMaps = new HashMap<>();
 		
 		if (accounts != null) {
 			logger.fine("Loading accounts");
-				
+		
 			for (Object account : accounts) {
-				Map<String, Object> fields = (Map)account;
-				String name = (String)fields.get("name");
-				long mraTime = ((Number)fields.get("mraTime")).longValue();
-				List mapAsObject = (List)fields.get("map");
-				int[] map = new int[mapAsObject.size()];
-				int i = 0;
+				String name = null;
+				long mraTime = 0L;
+				int[] map = null;
 
-				for (Object mapValue : mapAsObject) 
-					map[i++] = (Integer)mapValue;
+				if (dataStore instanceof JsonStore) {
+					AccountAccessMap accessMap = (AccountAccessMap)account;
+					name = accessMap.getName();
+					mraTime = accessMap.getMraTime();
+					map = accessMap.getMap();
+				} else {
+					Map<String, Object> fields = (Map)account;
+					name = (String)fields.get("name");
+					mraTime = ((Number)fields.get("mraTime")).longValue();
+					List mapAsObject = (List)fields.get("map");
+					map = new int[mapAsObject.size()];
+					int i = 0;
+	
+					for (Object mapValue : mapAsObject) 
+						map[i++] = (Integer)mapValue;
+				}
 			
 				map = shiftMap(mraTime, map);
 				accountAccessMaps.put(name, new AccountAccessMap(name, mraTime, map));
@@ -100,7 +113,9 @@ public class MRUComparator implements Comparator<Account> {
 		}
 				
 		acm.getMap()[0]++;
-		acm.mraTime = CURRENT_DAY;
+		//acm.mraTime = CURRENT_DAY;
+		acm.setMraTime(CURRENT_DAY);
+		
 	}
 	
 	
@@ -119,9 +134,9 @@ public class MRUComparator implements Comparator<Account> {
 	
 	
 	
-	public void saveAccessMap(CBLStore cblStore) {
+	public void saveAccessMap(Store dataStore) {
 		logger.info("Saving Account access map");
-		cblStore.saveAccessMap(accountAccessMaps.values());
+		dataStore.saveAccessMap(accountAccessMaps.values());
 	}
 	
 	
@@ -234,11 +249,14 @@ public class MRUComparator implements Comparator<Account> {
 		return toReturn += "]";
 	}
 	
-	
+	/*
 	public class AccountAccessMap {
 		private String name;
 		private long mraTime;
 		private int[] map;
+		
+		
+		public AccountAccessMap() {}
 		
 		public AccountAccessMap(String accountName, long lastAccessTime, int[] map) {
 			name = accountName;
@@ -264,6 +282,7 @@ public class MRUComparator implements Comparator<Account> {
 			if (accountName.contains("O1"))
 				map[34] = 2;
 			// end testing */
+	/*
 		}
 
 		public String getName() {
@@ -289,9 +308,25 @@ public class MRUComparator implements Comparator<Account> {
 		public void setMap(int[] map) {
 			this.map = map;
 		}
+
+		@Override
+		public int hashCode() {
+			return name.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			
+			if (obj instanceof AccountAccessMap && ((AccountAccessMap)obj).getName().equalsIgnoreCase(name))
+				return true;
+			else
+				return false;
+		}
+		
+		
 		
 	}
-	
+	*/
 	
 	public static void main(String args[]) {
 		Calendar now = Calendar.getInstance();

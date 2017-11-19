@@ -1,4 +1,4 @@
-package com.passvault.util.couchbase;
+package com.passvault.util.data.couchbase;
 
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -34,8 +34,10 @@ import com.couchbase.lite.support.CouchbaseLiteHttpClientFactory;
 import com.couchbase.lite.support.PersistentCookieJar;
 import com.couchbase.lite.util.Log;
 import com.passvault.util.Utils;
+import com.passvault.util.couchbase.SyncClient;
+import com.passvault.util.sync.AccountsChanged;
 
-public class SyncGatewayClient {
+public class SyncGatewayClient implements SyncClient {
 
 	public static final String DEFAULT_HOST = "localhost";
 	public static final int DEFAULT_PORT = 4984;
@@ -450,7 +452,7 @@ params.put("accountUUID", accountUUID);
 	}
 	
 	
-	public class ReplicationStatus {
+	public class ReplicationStatus implements com.passvault.util.sync.ReplicationStatus {
 		
 		public boolean isRunning() {
 logger.info("+++++++++++++++ pusher status=" + pusher.getStatus().toString() + ", puller status=" + puller.getStatus().toString());

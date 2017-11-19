@@ -1,4 +1,4 @@
-package com.passvault.util.couchbase;
+package com.passvault.util.data.couchbase;
 
 
 import java.util.ArrayList;
@@ -25,11 +25,14 @@ import com.passvault.crypto.AESEngine;
 import com.passvault.crypto.CryptEngine;
 import com.passvault.util.Account;
 import com.passvault.util.MRUComparator;
+import com.passvault.util.AccountAccessMap;
 import com.passvault.util.Utils;
+import com.passvault.util.data.BaseStore;
+import com.passvault.util.sync.AccountsChanged;
 
 import android.util.Base64;
 
-public class CBLStore {
+public class CBLStore extends BaseStore {
 
 	protected String databaseName;
 	protected Database database;
@@ -413,7 +416,7 @@ public class CBLStore {
 		deleteAccount(account.getName());
 	}
 	
-
+	/*
 	public byte[] decodeString(String toDecode) {	
 		
 		if (toDecode == null || toDecode.equals("")) {
@@ -437,7 +440,7 @@ public class CBLStore {
 		}
 		
 	}
-
+	*/
 
 	public void setEncryptionKey(String encryptionKey) {
 		this.encryptionKey = encryptionKey;
@@ -491,7 +494,7 @@ public class CBLStore {
 	}
 	
 	
-	public void saveAccessMap(Collection<MRUComparator.AccountAccessMap> values) {
+	public void saveAccessMap(Collection<AccountAccessMap> values) {
 		logger.info("Saving AccessMap");
 		final Map saveDoc = new HashMap<>();
 		saveDoc.put("docType", ACCESS_MAP_DTYPE);

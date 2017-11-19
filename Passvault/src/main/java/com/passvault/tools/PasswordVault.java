@@ -8,7 +8,9 @@ import java.util.logging.Logger;
 import com.passvault.crypto.AESEngine;
 import com.passvault.ui.text.Cmd;
 import com.passvault.util.Account;
-import com.passvault.util.couchbase.CBLStore;
+import com.passvault.util.data.Store;
+import com.passvault.util.data.couchbase.CBLStore;
+import com.passvault.util.data.file.JsonStore;
 
 public class PasswordVault {
 	
@@ -51,10 +53,15 @@ try {
 		//this.key = key;
 		
 		if (storeType.equalsIgnoreCase("cbl")) {
-			CBLStore cblStore = new CBLStore(file, CBLStore.DatabaseFormat.SQLite, key);
+			Store cblStore = new CBLStore(file, CBLStore.DatabaseFormat.SQLite, key);
 //store = cblStore;
 			logger.fine("Using Couchbase Lite for persistence");
 			cmd = new Cmd(accounts, key, cblStore);
+		} else if (storeType.equalsIgnoreCase("json")) {
+			Store jsonStore = new JsonStore();
+			jsonStore.setEncryptionKey(key);
+			logger.fine("Using Json Store for persistence");
+			cmd = new Cmd(accounts, key, jsonStore);
 		} else {
 			logger.fine("Using data file for persistence");
 			cmd = new Cmd(accounts, key, file);
@@ -161,6 +168,8 @@ try {
 				if (storeType.equalsIgnoreCase("cbl")) {
 //new PasswordVault(unPaddedKey, "cbl", args[0]);
 					new PasswordVault(AESEngine.finalizeKey(unPaddedKey, KEY_SIZE_FACTOR), "cbl", args[0]);
+				} else if (storeType.equalsIgnoreCase("json")) {
+					new PasswordVault(AESEngine.finalizeKey(unPaddedKey, KEY_SIZE_FACTOR), "json", args[0]);
 				} else {
 					new PasswordVault(AESEngine.finalizeKey(unPaddedKey, KEY_SIZE_FACTOR), "file", args[0]);
 				}

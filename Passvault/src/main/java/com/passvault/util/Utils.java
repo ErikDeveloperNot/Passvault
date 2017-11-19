@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
@@ -20,6 +21,14 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.UriBuilder;
+
+import org.glassfish.jersey.SslConfigurator;
+import org.glassfish.jersey.client.ClientConfig;
 
 import com.passvault.crypto.AESEngine;
 import com.passvault.crypto.CryptEngine;
@@ -33,6 +42,15 @@ public class Utils {
 	private static String platform;
 	private static Logger logger;
 	private static AccountUUIDResolver uuidResolver;
+	
+	public static final String BASE_URL = "/PassvaultServiceRegistration";
+	public static final String KEY_STORE_JKS = "com/passvault/ssl/passvault_store.jks";
+	public static final String KEY_STORE_BKS = "com/passvault/ssl/passvault_store.bks";
+	public static final String KEY_STORE_PASSWORD = "passvault";
+	public static final String GITHUB_REG_URL = "https://api.github.com/repos/ErikDeveloperNot/Passvault/" +
+												"contents/Passvault/config/RegistrationServer.json?ref=master";
+	public static final int CONNECTION_TIMEOUT = 30;
+	public static final int READ_TIMEOUT = 30;
 	
 	static {
 		logger = Logger.getLogger("com.passvault.util");
@@ -395,22 +413,77 @@ public class Utils {
 		Utils.uuidResolver = uuidResolver;
 	}
 	
+	
 	/*
-	public static void main(String[] args) {
-		List<Account> accounts = new ArrayList<Account>();
-		accounts.add(new Account("test1", "user1", "pass1", "pass1", "", System.currentTimeMillis()));
-		accounts.add(new Account("test2", "user2", "pass2", "pass2", "", System.currentTimeMillis()));
-		accounts.add(new Account("test3", "user3", "pass3", "pass3", "", System.currentTimeMillis()));
-		accounts.add(new Account("test4", "user4", "pass4", "pass4", "", System.currentTimeMillis()));
-		System.out.println("Sving accounts to /tmp/test.dat");
-		saveAccounts("/tmp/test.dat", "key1key1key1key1", accounts);
-		System.out.println("reading accounts from /tmp/test.dat");
-		List<Account> accounts2 = new ArrayList<Account>();
-		loadAccounts("/tmp/test.dat", "key1key1key1key1", accounts2);
-		for (Account account : accounts2) {
-			System.out.println(account.getName() + ", " + account.getUser() + ", " + account.getPass());
+	 * Helpers for REST calls
+	 */
+	public static Invocation.Builder createBuilder(String registerServer, String baseURL, String[] paths) {
+		URI baseURI = getBaseURI(registerServer, baseURL);
+		Client client = getClient(baseURI.getScheme());
+		WebTarget target = client.target(getBaseURI(registerServer, baseURL));
+        
+        // paths[] need to make sure path objects are in the correct order
+        for (String path : paths) {
+        		logger.finest("Adding path: " + path);
+			target = target.path(path);
+		}
+        
+        //System.out.println(target.getUri().getPath());
+        return target.request();
+	}
+	
+	
+	private static Client getClient(String scheme) {
+		Client client = null;
+		logger.fine("Getting client for protocol: " + scheme);
+		
+		String platform;
+		
+		try {
+			Class.forName("com.erikdeveloper.passvault.couchbase.AndroidCBLStore");
+			platform = "mobile";
+		} catch(Exception e) {
+			platform = "desktop";
 		}
 		
+		if (scheme.equalsIgnoreCase("https")) {
+			KeyStore store = null;
+			
+			if (platform.equalsIgnoreCase("mobile"))
+				store = Utils.getKeyStore(KEY_STORE_BKS, KEY_STORE_PASSWORD, "BKS");
+			else
+				store = Utils.getKeyStore(KEY_STORE_JKS, KEY_STORE_PASSWORD, "JKS");
+			
+			SslConfigurator sslConfig = SslConfigurator.newInstance()
+					.trustStore(store)
+					.trustStorePassword(KEY_STORE_PASSWORD);
+			/*
+			SslConfigurator sslConfig = SslConfigurator.newInstance()
+			        .trustStoreFile("/opt/ssl/keystores/passvault_store.jks")
+			        .trustStorePassword("passvault");
+			        */
+			SSLContext sslContext = sslConfig.createSSLContext();
+			client = ClientBuilder.newBuilder().sslContext(sslContext).build();
+		} else {
+			ClientConfig config = new ClientConfig();
+	        client = ClientBuilder.newClient(config);
+		}
+		
+		logger.fine("Returning client");
+		return client;
 	}
-	*/
+
+    private static URI getBaseURI(String registerServer, String baseURL) {
+    		String protocol = getProtocol(registerServer);
+    		//return UriBuilder.fromUri(protocol + "://" + registerServer + baseURL).build();
+    		return UriBuilder.fromUri(protocol + "://" + registerServer).build();
+    }
+    
+    private static String getProtocol(String registerServer) {
+    		
+	    	if (registerServer.contains("8080")) 
+	    		return "http";
+	    	else 
+	    		return "https";
+    }
  }

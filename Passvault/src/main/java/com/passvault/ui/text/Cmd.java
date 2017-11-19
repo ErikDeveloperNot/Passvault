@@ -19,8 +19,10 @@ import com.passvault.util.Account;
 import com.passvault.util.MRUComparator;
 import com.passvault.util.RandomPasswordGenerator;
 import com.passvault.util.Utils;
-import com.passvault.util.couchbase.AccountsChanged;
-import com.passvault.util.couchbase.CBLStore;
+import com.passvault.util.data.Store;
+import com.passvault.util.data.couchbase.CBLStore;
+import com.passvault.util.data.file.JsonStore;
+import com.passvault.util.sync.AccountsChanged;
 
 public class Cmd {
 	
@@ -29,7 +31,7 @@ public class Cmd {
 	private List<Account> accounts;
 	private String key;
 	private String dataFile;
-	private CBLStore cblStore;
+	private Store dataStore;
 	private StoreType storeType;
 	private MRUComparator mruComparator;
 	private static Logger logger;
@@ -50,11 +52,11 @@ public class Cmd {
 	}
 	
 	
-	public Cmd(List<Account> accounts, String key, CBLStore cblStore) {
+	public Cmd(List<Account> accounts, String key, Store cblStore) {
 		logger.finest("Creating Cmd with couchbase lite");
 		this.key = key;
 		this.accounts = accounts;
-		this.cblStore = cblStore;
+		this.dataStore = cblStore;
 		storeType = StoreType.CBL_STORE;
 		// only available for CBL client
 		//mruComparator = MRUComparator.getInstance();		
@@ -73,9 +75,9 @@ public class Cmd {
 			accounts.sort(mruComparator);
 			
 			for (Account account : accounts) {
-				if (account.isValidEncryption()) { 
+				if (account.isValidEncryption()) { //&& !account.isDeleted()) { 
 					p((i++) + ". " + account.getName());
-				} else {
+				} else { //if (!account.isDeleted()){
 					p((i++) + ". " + account.getName() + " **");
 					showMsg = true;
 				}
@@ -108,15 +110,17 @@ public class Cmd {
 	
 	
 	public void loadAccounts() {
+		
 		switch (storeType) {
 		case CBL_STORE:
 			try {
-				cblStore.printConflicts();
+				dataStore.printConflicts();
 				
-				if (System.getProperty("com.passvault.store.purge", "false").equalsIgnoreCase("true"))
-					cblStore.purgeDeletes();
+				if (System.getProperty("com.passvault.store.purge", "false").equalsIgnoreCase("true")) {
+					dataStore.purgeDeletes();
+				}
 				
-				cblStore.loadAccounts(accounts);
+				dataStore.loadAccounts(accounts);
 			} catch (Exception e) {
 				logger.severe("Error loading accounts from couchbase lite: " + e.getMessage());
 				e.printStackTrace();
@@ -134,7 +138,7 @@ public class Cmd {
 	
 	public void syncAccounts() {
 		
-		if (cblStore == null) {
+		if (dataStore == null) {
 			p("\nCan only Sync accounts with cbl storage type.");
 			return;
 		}
@@ -148,7 +152,7 @@ public class Cmd {
 				synchronized (accounts) {
 					try {
 						accounts.clear();
-						cblStore.loadAccounts(accounts);
+						dataStore.loadAccounts(accounts);
 					} catch (Exception e) {
 						logger.warning("Error reloading accounts : " + e.getMessage());
 						e.printStackTrace();
@@ -166,7 +170,7 @@ public class Cmd {
 				SyncGatewayClient.DEFAULT_BUCKET, accountsChngImpl);
 		*/
 		
-		new SyncCmd(cblStore, accountsChngImpl, accounts);
+		new SyncCmd(dataStore, accountsChngImpl, accounts);
 		
 	}
 	
@@ -209,7 +213,7 @@ public class Cmd {
 		Clipboard clipBoard = Toolkit.getDefaultToolkit().getSystemClipboard();
 		clipBoard.setContents(stringSelection, stringSelection);
 		mruComparator.accountAccessed(getAccount.getName());
-
+mruComparator.saveAccessMap(dataStore);
 		p("Password copied to clipboard for account " + getAccount.getName() + 
 				", for username " + getAccount.getUser() + "\n");
 		
@@ -248,7 +252,7 @@ public class Cmd {
 		
 		switch (storeType) {
 		case CBL_STORE:
-			cblStore.saveAccount(newAccount);
+			dataStore.saveAccount(newAccount);
 			break;
 		case DAT_FILE:
 			Utils.saveAccounts(dataFile, key, accounts);
@@ -278,7 +282,7 @@ public class Cmd {
 		try {
 			updateAccount = accounts.get(x-1);
 		} catch (Exception e) {
-			p("No Account is mapped to " + (x));
+			p("No Account is mapped to " + (x-1));
 			return;
 		}
 		
@@ -312,7 +316,7 @@ public class Cmd {
 		
 		switch (storeType) {
 		case CBL_STORE:
-			cblStore.saveAccount(updateAccount);
+			dataStore.saveAccount(updateAccount);
 			break;
 		case DAT_FILE:
 			Utils.saveAccounts(dataFile, key, accounts);
@@ -462,18 +466,22 @@ public class Cmd {
 		}
 		
 		try {
+
 			removeAccount = accounts.remove(x-1);
+			//removeAccount = accounts.get(x-1);
 		} catch (Exception e) {
-			p("No Account is mapped to " + (x));
+			p("No Account is mapped to " + (x-1));
 			return;
 		}
 		
 		removeAccount.setUpdateTime(System.currentTimeMillis());
+		removeAccount.setDeleted(true);
 		
 		switch (storeType) {
 		case CBL_STORE:
-			cblStore.deleteAccount(removeAccount);
+			dataStore.deleteAccount(removeAccount);
 			mruComparator.accountRemoved(removeAccount.getName());
+			//mruComparator.saveAccessMap(dataStore);
 			break;
 		case DAT_FILE:
 			Utils.saveAccounts(dataFile, key, accounts);
@@ -490,7 +498,7 @@ public class Cmd {
 	
 	// Do any persistence or cleanup
 	public void shutDown() {
-		mruComparator.saveAccessMap(cblStore);
+		mruComparator.saveAccessMap(dataStore);
 	}
 	
 	
@@ -535,8 +543,8 @@ public class Cmd {
 			try {
 				key = AESEngine.finalizeKey(key, AESEngine.KEY_LENGTH_256);
 				//password = AESEngine.getInstance().decryptString(key, account.getPass());
-				password = AESEngine.getInstance().decryptBytes(key, cblStore.decodeString(account.getPass()));
-				oldPassword = AESEngine.getInstance().decryptBytes(key, cblStore.decodeString(account.getOldPass()));
+				password = AESEngine.getInstance().decryptBytes(key, dataStore.decodeString(account.getPass()));
+				oldPassword = AESEngine.getInstance().decryptBytes(key, dataStore.decodeString(account.getOldPass()));
 			} catch (Exception e) {
 				p(" Error trying decrypt password: " + e.getMessage());
 				e.printStackTrace();
@@ -550,7 +558,7 @@ public class Cmd {
 				
 				account.setValidEncryption(true);
 				//cblStore.saveAccount(account, key);
-				cblStore.saveAccount(account);
+				dataStore.saveAccount(account);
 				return true;
 			} else {
 				p("Unable to decrypt password with entered key");
@@ -561,7 +569,7 @@ public class Cmd {
 			
 			if (accounts.remove(account)) {
 				account.setUpdateTime(System.currentTimeMillis());
-				cblStore.deleteAccount(account);
+				dataStore.deleteAccount(account);
 			} else {
 				p("Unable to remove account: " + account.getName());
 			}
@@ -604,8 +612,8 @@ public class Cmd {
 		
 		switch (storeType) {
 		case CBL_STORE:
-			cblStore.setEncryptionKey(key);
-			cblStore.saveAccounts(accounts);
+			dataStore.setEncryptionKey(key);
+			dataStore.saveAccounts(accounts);
 			break;
 		case DAT_FILE:
 			Utils.saveAccounts(dataFile, key, accounts);

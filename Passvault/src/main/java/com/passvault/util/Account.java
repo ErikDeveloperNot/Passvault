@@ -15,6 +15,7 @@ public class Account implements Comparable<Account>, Serializable {
 	private long updateTime;
 	private String url;
 	private boolean validEncryption;
+	private boolean deleted;
 	
 	public static final String BLANK_PASSWORD = "\t";
 	
@@ -23,7 +24,7 @@ public class Account implements Comparable<Account>, Serializable {
 	public static final String FIELD_DELIMIETER = ":";
 	
 	public Account(String name, String user, String pass, String oldPass, String accountUUID, long updateTime,
-			String url) {
+			String url, boolean deleted) {
 		this.user = user;
 		this.name = name;
 		this.pass = pass;
@@ -32,6 +33,13 @@ public class Account implements Comparable<Account>, Serializable {
 		this.accountUUID = accountUUID;
 		this.setUrl(url);
 		validEncryption = true;
+		this.deleted = deleted;
+	}
+	
+	
+	public Account(String name, String user, String pass, String oldPass, String accountUUID, long updateTime,
+			String url) {
+		this(name, user, pass, oldPass, accountUUID, updateTime, url, false);
 	}
 	
 
@@ -103,6 +111,16 @@ public class Account implements Comparable<Account>, Serializable {
 	public void setOldPass(String oldPass) {
 		this.oldPass = oldPass;
 	}
+	
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
+	}
+
 
 	@Override
 	public int compareTo(Account o) {

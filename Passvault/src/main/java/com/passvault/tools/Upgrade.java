@@ -6,14 +6,15 @@ import java.util.List;
 import com.passvault.crypto.AESEngine;
 import com.passvault.util.Account;
 import com.passvault.util.Utils;
-import com.passvault.util.couchbase.CBLStore;
+import com.passvault.util.data.Store;
+import com.passvault.util.data.couchbase.CBLStore;
 
 public class Upgrade {
 
 	private static String encryptionKey;
 	private static String dataFile;
 	
-	static CBLStore cblStore = null;
+	static Store cblStore = null;
 	
 	public static void main(String[] args) {
 		// TODO options to run specific upgrades

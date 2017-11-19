@@ -16,6 +16,7 @@ public class Gateways {
 			
 
 	private Gateway remote;
+	private Gateway json;
 	private Gateway[] local;
 	
 	public Gateways() {
@@ -25,6 +26,7 @@ public class Gateways {
 	public Gateways(Map<String, Object> values) {
 		if (values != null) {
 			remote = new Gateway((Map)values.get("remote"));
+			json = new Gateway((Map)values.get("json"));
 			
 			List<Map> localValues = (List)values.get("local");
 			
@@ -52,10 +54,14 @@ public class Gateways {
 		this.local = local;
 	}
 	
-	
-	
-	
-	
+	public Gateway getJson() {
+		return json;
+	}
+
+	public void setJson(Gateway json) {
+		this.json = json;
+	}
+
 	public static void main(String args[]) throws Exception {
 		byte[] jsonData = Files.readAllBytes(Paths.get("/Users/user1/.passvault/.password_vault_sync.json"));
 		String s = new String(jsonData);
@@ -89,6 +95,7 @@ public class Gateways {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
+		builder.append("{\n " + "json: " + ((json == null) ? "" : json.toString()) + "\n}\n");
 		builder.append("{\n " + "remote: " + ((remote == null) ? "" : remote.toString()) + "\n}\nlocal(s): \n");
 		
 		if (local != null) {

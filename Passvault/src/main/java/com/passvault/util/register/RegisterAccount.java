@@ -18,6 +18,7 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passvault.util.Utils;
@@ -40,10 +41,18 @@ public class RegisterAccount {
 	private static final String KEY_STORE_PASSWORD = "passvault";
 	private static final String GITHUB_REG_URL = "https://api.github.com/repos/ErikDeveloperNot/Passvault/" +
 												"contents/Passvault/config/RegistrationServer.json?ref=master";
+	private static final int CONNECTION_TIMEOUT = 30;
+	private static final int READ_TIMEOUT = 30;
 	private static Logger logger;
 
 	private String registerServer;
+	private StoreType storeType;
 	
+	public static enum StoreType {
+		JSON,
+		CBL,
+		DATA;
+	}
 	
 	static {
 		logger = Logger.getLogger("com.passvault.util.regiter");
@@ -51,11 +60,12 @@ public class RegisterAccount {
 	
 	
 	//used by command line client System property must be set
-	public RegisterAccount() {
-		this(System.getProperty("com.passvault.register.server", null));
+	public RegisterAccount(StoreType storeType) {
+		this(System.getProperty("com.passvault.register.server", null), storeType);
 	}
 	
-	public RegisterAccount(String registerServer) {
+	public RegisterAccount(String registerServer, StoreType storeType) {
+		this.storeType = storeType;
 		this.registerServer = registerServer;
 		logger.info("Register server set to: " + registerServer);
 	}
@@ -72,7 +82,8 @@ public class RegisterAccount {
 		sendModel.setVersion(VERSION_1);
 		Gateway returnModel = new Gateway();
 		logger.info("Sending register request for: " + email);
-		sendPOST(regResp, sendModel, returnModel, new String[]{"service", "registerV1"});
+		sendPOST(regResp, sendModel, returnModel, new String[]{"service", "registerV1",
+				storeType == StoreType.CBL ? "" : "sync-server"});
 		//System.out.println(">>>>>>>> success=" + regResp.success() + "\n\n" + regResp.getError());
 		
 		/*
@@ -114,7 +125,8 @@ public class RegisterAccount {
 		RegisterResponse regResp = new FinishRegistrationResponse();
 		Gateway returnModel = new Gateway();
 		logger.info("Sending get register config request");
-		sendGET(regResp, returnModel, new String[]{"service", "registerV1"});
+		sendGET(regResp, returnModel, new String[]{"service", "registerV1",
+				storeType == StoreType.CBL ? "" : "sync-server"});
 		
 		return regResp;
 	}
@@ -174,7 +186,8 @@ public class RegisterAccount {
 		sendModel.setPassword(password);
 		String returnModel = new String();
 		logger.info("Sending delete register account request for account: " + account);
-		sendPOST(regResp, sendModel, returnModel, new String[]{"service", "deleteAccount"});
+		sendPOST(regResp, sendModel, returnModel, new String[]{"service", "deleteAccount",
+				storeType == StoreType.CBL ? "" : "sync-server"});
 		
 		return regResp;
 	}
@@ -187,6 +200,8 @@ public class RegisterAccount {
 			ssl = SSLContext.getInstance("TLSv1.2");
 		    ssl.init(null, null, null);
 		    Client client = ClientBuilder.newBuilder().sslContext(ssl).build();
+client.property(ClientProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
+client.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
 			Response response = client.target(GITHUB_REG_URL).request().get();
 			checkResponse(regResp, returnModel, response);
 		} catch (Exception e) {
@@ -301,7 +316,7 @@ public class RegisterAccount {
 	}
 	
 	
-	
+	/*
 	public static void main(String[] args)  throws Exception {
 		RegisterAccount regAcct = new RegisterAccount();
 		RegisterResponse getRegServer = new GetRegisterServerResponse();
@@ -315,7 +330,7 @@ public class RegisterAccount {
 		} else {
 			System.out.println(getRegServer.getError());
 		}
-		
+		*/
 		
 		
 		
@@ -470,7 +485,7 @@ public class RegisterAccount {
 			e.printStackTrace();
 		}
 		*/
-    }
+    //}
 	
 	
 	private static Client getClient(String scheme) {
@@ -509,6 +524,9 @@ public class RegisterAccount {
 	        client = ClientBuilder.newClient(config);
 		}
 
+//client.property(ClientProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
+//client.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
+		
 		logger.fine("Rturning client");
 		return client;
 	}
