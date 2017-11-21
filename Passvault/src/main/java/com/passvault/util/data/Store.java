@@ -6,6 +6,7 @@ import java.util.List;
 import com.passvault.util.Account;
 import com.passvault.util.AccountAccessMap;
 import com.passvault.util.MRUComparator;
+import com.passvault.util.data.file.model.Settings;
 import com.passvault.util.sync.AccountsChanged;
 import com.passvault.util.sync.ReplicationStatus;
 
@@ -31,4 +32,6 @@ public interface Store {
 	Collection loadAccessMap();
 	public void printConflicts();
 	public void purgeDeletes();
+	void saveSettings(Settings settings);
+	Settings loadSettings();
 }

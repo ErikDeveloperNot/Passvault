@@ -12,8 +12,8 @@ DB=pass_vault
 ## passvault directory
 VAULT_DIR=<VAULT_DIR>/.passvault
 
-## storage type either cbl or file
-STORAGE=cbl
+## storage type either cbl, json, or file
+STORAGE=json
 
 ## if dadtabase type is cbl purge deleted accounts on startup, [ture/false], defaults to false
 PURGE_DELETES=false

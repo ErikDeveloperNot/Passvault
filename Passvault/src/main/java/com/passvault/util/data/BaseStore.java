@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.passvault.util.Account;
 import com.passvault.util.AccountAccessMap;
+import com.passvault.util.data.file.model.Settings;
 import com.passvault.util.sync.AccountsChanged;
 import com.passvault.util.sync.ReplicationStatus;
 
@@ -71,6 +72,17 @@ public abstract class BaseStore implements Store {
 	@Override
 	public void printConflicts() {
 		// default do nothing since this is specific to couch
+	}
+	
+	@Override
+	public void saveSettings(Settings settings) {
+		// default do nothing since this is specific to couch
+	}
+	
+	@Override
+	public Settings loadSettings() {
+		// default do nothing since this is specific to couch
+		return null;
 	}
 
 	abstract public void setEncryptionKey(String encryptionKey);

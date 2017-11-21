@@ -124,6 +124,12 @@ public class JsonStore extends BaseStore {
 	}
 	
 	
+	public JsonStore(String key) {
+		this();
+		this.key = key;
+	}
+	
+	
 	public JsonStore() {
 		logger.info("Creating Instance");
 		dataFile = System.getProperty("com.passvault.data.file", "data.json");
@@ -133,11 +139,11 @@ public class JsonStore extends BaseStore {
 		//if store is new setup default values where applicable
 		if (dataStore.getAccounts() == null)
 			//dataStore.setAccounts(new AccountModel[] {});
-			dataStore.setAccounts(new HashMap<>());
+			dataStore.setAccounts(new HashMap<String, AccountModel>());
 		
 		if (dataStore.getMraMaps() == null)
 			//dataStore.setMraMaps(new AccountAccessMap[] {});
-			dataStore.setMraMaps(new HashMap<>());
+			dataStore.setMraMaps(new HashMap<String, AccountAccessMap>());
 		
 		if (dataStore.getSettings() == null) {
 			Settings settings = new Settings();
@@ -213,9 +219,6 @@ public class JsonStore extends BaseStore {
 	}
 	
 	
-	/*
-	 * passing null will use exiting datastore accounts
-	 */
 	private void saveDataStore(Account account, String key) {
 		logger.fine("Saving account: " + account.getName());
 		CryptEngine aesEngine = AESEngine.getInstance();
@@ -228,6 +231,39 @@ public class JsonStore extends BaseStore {
 		toAdd.setDeleted(account.isDeleted());
 		toAdd.setPassword(new String(encodeBytes(aesEngine.encryptString(key, account.getPass()))));
 		toAdd.setOldPassword(new String(encodeBytes(aesEngine.encryptString(key, account.getOldPass()))));
+		
+		Map<String, AccountModel> accounts = dataStore.getAccounts();
+		
+		// if account exists, update it, or else add it
+		boolean accountUpdated = false;
+		int i = 0;
+		
+		if (accounts.containsKey(toAdd.getAccountName())) 
+			logger.fine("Updating account");
+		else
+			logger.fine("Saving new account");
+			
+		accounts.put(toAdd.getAccountName(), toAdd);
+
+		rotateDataFiles();
+		writeDataFile(true);
+	}
+	
+	
+	private void saveDataStoreForEncryptedPass(Account account) {
+		/*
+		 * only used by sync process where accounts received are already encoded/encrypted
+		 */
+		logger.fine("Saving account: " + account.getName());
+		
+		AccountModel toAdd = new AccountModel();
+		toAdd.setAccountName(account.getName());
+		toAdd.setUserName(account.getUser());
+		toAdd.setUpdateTime(account.getUpdateTime());
+		toAdd.setURL(account.getUrl());
+		toAdd.setDeleted(account.isDeleted());
+		toAdd.setPassword(account.getPass());
+		toAdd.setOldPassword(account.getOldPass());
 		
 		Map<String, AccountModel> accounts = dataStore.getAccounts();
 		
@@ -317,8 +353,8 @@ public class JsonStore extends BaseStore {
 	}
 
 	@Override
-	public synchronized ReplicationStatus syncAccounts(String host, String protocol, int port, String path, String user,
-			String password, AccountsChanged accountsChanged) {
+	public synchronized ReplicationStatus syncAccounts(String host, String protocol, int port, String path, final String user,
+			final String password, final AccountsChanged accountsChanged) {
 		
 		/*
 		 * currently there is no support for syncing anonymously
@@ -441,7 +477,15 @@ public class JsonStore extends BaseStore {
 									logger.fine("Purging account: " + account.getAccountName());
 								} else {
 									//account needs to be updated
-									saveAccount(new Account(account.getAccountName(), 
+									/*saveAccount(new Account(account.getAccountName(), 
+											account.getUserName(), 
+											account.getPassword(), 
+											account.getOldPassword(), 
+											user,							// same as accountUUID 
+											account.getUpdateTime(), 
+											account.getUrl()));*/
+									saveDataStoreForEncryptedPass(new Account(
+											account.getAccountName(), 
 											account.getUserName(), 
 											account.getPassword(), 
 											account.getOldPassword(), 
@@ -456,7 +500,15 @@ public class JsonStore extends BaseStore {
 							// new account, save it if it is not marked as deleted
 							if (!account.isDeleted()) {
 								logger.fine("Saving new account: " + account.getAccountName());
-								saveAccount(new Account(account.getAccountName(), 
+								/*saveAccount(new Account(account.getAccountName(), 
+														account.getUserName(), 
+														account.getPassword(), 
+														account.getOldPassword(), 
+														user,							// same as accountUUID 
+														account.getUpdateTime(), 
+														account.getUrl()));*/
+								saveDataStoreForEncryptedPass(new Account(
+														account.getAccountName(), 
 														account.getUserName(), 
 														account.getPassword(), 
 														account.getOldPassword(), 
@@ -501,7 +553,8 @@ public class JsonStore extends BaseStore {
 		rotateDataFiles();
 		writeDataFile(true);
 	}
-
+	
+	
 	@Override
 	public void saveAccount(Account account) {
 		saveAccount(account, key);
@@ -705,6 +758,19 @@ public class JsonStore extends BaseStore {
 	}
 	
 	
+	@Override
+	public void saveSettings(Settings settings) {
+		dataStore.setSettings(settings);
+		writeDataFile(false);
+	}
+
+
+	@Override
+	public Settings loadSettings() {
+		return dataStore.getSettings();
+	}
+
+
 	private void purgeAccount(String accountName) {
 		//List<AccountModel> accountsToKeep = new ArrayList<>();
 		long currentTime = System.currentTimeMillis();
