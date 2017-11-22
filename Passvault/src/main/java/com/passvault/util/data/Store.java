@@ -28,6 +28,7 @@ public interface Store {
 	byte[] decodeString(String toDecode);
 	byte[] encodeBytes(byte[] toEncode);
 	void setEncryptionKey(String encryptionKey);
+	String getEncryptionKey();
 	void saveAccessMap(Collection<AccountAccessMap> values);
 	Collection loadAccessMap();
 	public void printConflicts();

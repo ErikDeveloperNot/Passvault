@@ -3,6 +3,8 @@ ECHO "Starting Installer"
 FOR /f %%i in ('cd') do set CWD=%%i
 ECHO %CWD%
 
+MKDIR .passvault\data
+
 ECHO "Running replace script"
 cscript.exe .\install\windows\replace.vbs "./passvault.bat" %CWD%
 

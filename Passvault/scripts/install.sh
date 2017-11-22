@@ -10,6 +10,7 @@ function mac_setup {
    echo "Setting up Mac Pasvault.app"
    mkdir -p Passvault.app/Contents/MacOS
    mkdir Passvault.app/Contents/Resources
+   mkdir .passvault/data
    cp ./install/mac/vault.icns Passvault.app/Contents/Resources
    cp ./install/mac/info.plist Passvault.app/Contents
    cp ./install/mac/Passvault Passvault.app/Contents/MacOS

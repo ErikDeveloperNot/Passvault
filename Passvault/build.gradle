@@ -1,4 +1,4 @@
- version = '2.0b'
+ //version = '2.0.0'
 
 apply plugin: 'java-library'
 
@@ -21,8 +21,8 @@ tasks.withType(JavaCompile) {
 // build production client
 task buildProduction {
     dependsOn 'build'
-    dependsOn 'androidB64Jar'
-    tasks.findByName('buildProduction').mustRunAfter 'androidB64Jar'
+    dependsOn 'uiJar'
+    tasks.findByName('buildProduction').mustRunAfter 'uiJar'
     
     doLast {
         delete(buildDirProd);
@@ -31,24 +31,42 @@ task buildProduction {
         copyFiles("install", buildDirProd + installExtras)
         copyFiles("config/logging.properties", buildDirProd + installDir)
         copyFiles("build/libs/Passvault-core.jar", buildDirProd + installDir + "lib")
+        copyFiles("build/libs/Passvault-jsonStore-db.jar", buildDirProd + installDir + "lib")
         copyFiles("build/libs/Passvault-ui.jar", buildDirProd + installDir + "lib")
         copyFiles("build/libs/Passvault-androidBase64.jar", buildDirProd + installDir + "lib")
 		copyFiles("build/libs/Passvault-core.jar", androidDependencyDir)
+		copyFiles("build/libs/Passvault-jsonStore-db.jar", androidDependencyDir)
         //copyFiles("build/libs/Passvault-ui.jar", androidDependencyDir)
 }
 }
 
 
-task createRelease(type: Zip) {
+task createJsonRelease(type: Zip) {
     dependsOn 'buildProduction'
-    tasks.findByName('createRelease').mustRunAfter 'buildProduction'
-    archiveName = 'passvault-' + version + '.zip'
+    tasks.findByName('createJsonRelease').mustRunAfter 'buildProduction'
+    archiveName = 'passvault-json-db-' + version + '.zip'
     
     from(buildDirProd) {
-        exclude 'dist/**'
+        exclude('dist/**')
+        exclude('.passvault/lib/Passvault-couchbase-db.jar')
+        exclude('.passvault/lib/couchbase-*')
     }
     destinationDir file(buildDirProd + "dist")
 }
+
+
+task createCouchbaseRelease(type: Zip) {
+    dependsOn 'buildProduction'
+    tasks.findByName('createCouchbaseRelease').mustRunAfter 'buildProduction'
+    archiveName = 'passvault-couchbaseLite-db-' + version + '.zip'
+    
+    from(buildDirProd) {
+        exclude('dist/**')
+        exclude('.passvault/lib/Passvault-json-db.jar')
+    }
+    destinationDir file(buildDirProd + "dist")
+}
+
 
 // FIX ADD Resources ssl/jks
 task coreJar(type: Jar) {
@@ -65,13 +83,15 @@ task coreJar(type: Jar) {
         include 'com/passvault/**'
         exclude('com/passvault/ui/**')
         exclude('com/passvault/tools/**')
+        exclude('com/passvault/util/data/file/**')
+        exclude('com/passvault/util/data/couchbase/**')
     }
 }
 
 
 task uiJar(type: Jar) {
-    dependsOn 'coreJar'
-    tasks.findByName('uiJar').mustRunAfter 'coreJar'
+    dependsOn 'androidB64Jar'
+    tasks.findByName('uiJar').mustRunAfter 'androidB64Jar'
     archiveName = project.name + '-ui.jar'
     from('build/classes/main') {
         include('com/passvault/ui/**')
@@ -79,10 +99,27 @@ task uiJar(type: Jar) {
     }
 }
 
+task jsonStoreJar(type: Jar) {
+    dependsOn 'coreJar'
+    tasks.findByName('jsonStoreJar').mustRunAfter 'coreJar'
+    archiveName = project.name + '-jsonStore-db.jar'
+    from('build/classes/main') {
+        include('com/passvault/util/data/file/**')
+    }
+}
+
+task couchbaseStoreJar(type: Jar) {
+    dependsOn 'jsonStoreJar'
+    tasks.findByName('couchbaseStoreJar').mustRunAfter 'jsonStoreJar'
+    archiveName = project.name + '-couchbase-db.jar'
+    from('build/classes/main') {
+        include('com/passvault/util/data/couchbase/**')
+    }
+}
 
 task androidB64Jar(type: Jar) {
-    dependsOn 'uiJar'
-    tasks.findByName('androidB64Jar').mustRunAfter 'uiJar'
+    dependsOn 'couchbaseStoreJar'
+    tasks.findByName('androidB64Jar').mustRunAfter 'couchbaseStoreJar'
     archiveName = project.name + '-androidBase64.jar'
     from('build/classes/main') {
         include('android/util/**')

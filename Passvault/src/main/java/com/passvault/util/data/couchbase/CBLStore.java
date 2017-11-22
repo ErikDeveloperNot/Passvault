@@ -442,8 +442,14 @@ public class CBLStore extends BaseStore {
 	}
 	*/
 
+	@Override
 	public void setEncryptionKey(String encryptionKey) {
 		this.encryptionKey = encryptionKey;
+	}
+	
+	@Override
+	public String getEncryptionKey() {
+		return this.encryptionKey;
 	}
 	
 	

@@ -72,5 +72,5 @@ fi
 
 (
 cd $VAULT_DIR &&
-exec $JAVA_EX -cp ${LIB_DIR} $JAVA_OPTS -Djava.util.logging.config.file=logging.properties -Dcom.passvault.sync.logging=$SYNC_DEBUG -Dcom.passvault.register.server=$REG_SERVER -Dcom.passvault.store.purge=$PURGE_DELETES com.passvault.tools.PasswordVault $DB $STORAGE 2> err.log
+exec $JAVA_EX -cp ${LIB_DIR} $JAVA_OPTS -Djava.util.logging.config.file=logging.properties -Dcom.passvault.data.file="./data/data.json" -Dcom.passvault.sync.logging=$SYNC_DEBUG -Dcom.passvault.register.server=$REG_SERVER -Dcom.passvault.store.purge=$PURGE_DELETES com.passvault.tools.PasswordVault $DB $STORAGE 2> err.log
 )

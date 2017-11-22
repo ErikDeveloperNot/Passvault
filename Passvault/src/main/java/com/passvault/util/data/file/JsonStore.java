@@ -691,6 +691,11 @@ public class JsonStore extends BaseStore {
 	public void setEncryptionKey(String encryptionKey) {
 		this.key = encryptionKey;
 	}
+	
+	@Override
+	public String getEncryptionKey() {
+		return this.key;
+	}
 
 	@Override
 	public void saveAccessMap(Collection<AccountAccessMap> values) {
