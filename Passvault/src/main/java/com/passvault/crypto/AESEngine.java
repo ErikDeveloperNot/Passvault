@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.security.Key;
 import java.security.Provider;
 import java.security.Security;
+import java.util.Base64;
 import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AESEngine implements CryptEngine {
@@ -22,6 +24,7 @@ public class AESEngine implements CryptEngine {
 	
 	private static final String ALGORITHM = "AES";
     private static final String TRANSFORMATION = "AES";
+    private static final String CIPHER = "AES/CBC/PKCS5Padding";
     
     //public static final int KEY_LENGTH_64 = 8;
     public static final int KEY_LENGTH_128 = 16;
@@ -69,8 +72,7 @@ public class AESEngine implements CryptEngine {
 	}
 	
 
-	@Override
-	public String decryptString(String key, String encryptedString) {
+	public String decryptStringDeprecated(String key, String encryptedString) {
 		
 		if (encryptedString.length() == 0)
 			return "";
@@ -94,7 +96,7 @@ public class AESEngine implements CryptEngine {
 		} catch (Exception e) {
 			logger.severe("Error decrypting password: " + e.getMessage());
 			e.printStackTrace();
-			System.exit(-1);
+			//System.exit(-1);
 		}
 		
 		return decryptedContent;
@@ -102,7 +104,12 @@ public class AESEngine implements CryptEngine {
 	
 	
 	@Override
-	public String decryptBytes(String key, byte[] encryptedBytes) throws Exception {
+	public String decryptString(String key, String encryptedString) throws Exception {
+		return this.decryptBytes(key, encryptedString.getBytes("UTF-8"));
+	}
+	
+	
+	public String decryptBytesDeprecated(String key, byte[] encryptedBytes) throws Exception {
 		
 		if (encryptedBytes.length%16 != 0 || encryptedBytes.length == 0)
 			return "";
@@ -125,22 +132,45 @@ public class AESEngine implements CryptEngine {
 		} catch (Exception e) {
 			logger.severe("Error decrypting bytes: " + e.getMessage());
 			e.printStackTrace();
-			//System.exit(-1);
 			throw new Exception("Error dycrpting, " + e.getMessage());
 		}
 		
 		return decryptedContent;
 	}
-
-
+	
+	
 	@Override
-	public byte[] encryptString(String key, String unencryptedString) {
+	public String decryptBytes(String key, byte[] encryptedBytes) throws Exception {
+		String decrypted = null;
+		
+		if (encryptedBytes == null || encryptedBytes.length == 0)
+			return decrypted;
+        
+        try {
+            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), ALGORITHM);
+        		String ivString = finalizeKey(key.substring(20, 24), 16);
+            IvParameterSpec iv = new IvParameterSpec(ivString.getBytes("UTF-8"));
+        		
+            Cipher cipher = Cipher.getInstance(CIPHER);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+            decrypted = new String(cipher.doFinal(encryptedBytes));
+            
+        } catch (Exception e) {
+        		logger.severe("Error decrypting password: " + e.getMessage());
+			e.printStackTrace();
+			throw new Exception("Error dycrpting, " + e.getMessage());
+        }
+        
+        return decrypted;
+	}
+
+
+	public byte[] encryptStringDeprecated(String key, String unencryptedString) {
 		
 		if (unencryptedString == null || unencryptedString.length() == 0)
 			return null;
 		
 		Key secretKey = new SecretKeySpec(key.getBytes(), ALGORITHM);
-		String encryptedContent = null;
 		
 		try {
 	        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
@@ -155,11 +185,37 @@ public class AESEngine implements CryptEngine {
 		} catch (Exception e) {
 			logger.severe("Error encrypting password: " + e.getMessage());
 			e.printStackTrace();
-			System.exit(-1);
+			//System.exit(-1);
 		}
 		
 		return null;
 	}
+	
+	
+	@Override
+	public byte[] encryptString(String key, String unencryptedString) {
+		byte[] encrypted = null;
+		
+		if (unencryptedString == null || unencryptedString.length() == 0)
+			return null;
+        
+        try {
+            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), ALGORITHM);
+        		String ivString = finalizeKey(key.substring(20, 24), 16);
+            IvParameterSpec iv = new IvParameterSpec(ivString.getBytes("UTF-8"));
+        		
+            Cipher cipher = Cipher.getInstance(CIPHER);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+            encrypted = cipher.doFinal(unencryptedString.getBytes());
+            
+        } catch (Exception e) {
+        		logger.severe("Error encrypting password: " + e.getMessage());
+			e.printStackTrace();
+			//System.exit(-1);
+        }
+            
+        return encrypted;
+    }
 
 
 
@@ -202,7 +258,7 @@ public class AESEngine implements CryptEngine {
 				int i2 = (i+3*i) * (int)key.charAt((i+2)%key.length());
 				int i3 = ((i1 * i2) % mod);
 				int x = 3;
-				
+//System.out.println(i1 + " " + i2 + " " + i3);
 				while ((i3 < 65 || i3 > 122) && (i3 < 34 || i3 > 57)) 
 					i3 = ((i1 * x++) % mod--);
 				
@@ -214,50 +270,12 @@ public class AESEngine implements CryptEngine {
 		} else if (amountToPad < 0) {
 			key = key.substring(0, key.length() - amountToPad*-1);
 		}
-		
+//System.out.println("KEY=" + key);
 		logger.info("Returning key of length: " + key.length());
 		return key;
 	}
 
-	/*
-	public static String finalizeKeyOld(String key, int length) throws Exception {
-		int amountToPad = 0;
-		logger.info("finalizing key of length: " + key.length() + ", to a key length of: " + length);
-		
-		switch (length) {
-		case KEY_LENGTH_192:
-		case KEY_LENGTH_128:
-		case KEY_LENGTH_256:	
-		//case KEY_LENGTH_512:
-		
-			
-			if (key.length() > length) 
-				amountToPad = length - key.length();
-			else if (key.length() < length)
-				amountToPad = length - key.length();
-			
-			logger.finest("Amount to pad key: " + amountToPad);
-
-			break;
-		default:
-			throw new InvalidSpecifiedKeyLengthException();
-		}
-		
-		if (amountToPad > 0) {
-			// zero padded
-			for (int i=0; i<amountToPad; i++)
-				key += "0";
-		
-		} else if (amountToPad < 0) {
-			key = key.substring(0, key.length() - amountToPad*-1);
-		}
-		
-		logger.info("Returning key of length: " + key.length());
-		return key;
-	}
-	*/
 	
-
 	public static CryptEngine getInstance() {
 		logger.finest("Returning new instance of AESEngine");
 		return new AESEngine();
@@ -275,13 +293,13 @@ public class AESEngine implements CryptEngine {
 		
 	}
 	
-	/*
+	
 	public static void main(String args[]) throws Exception {
 	
 		String key = "key1key1key1key1";
 		
 		AESEngine aes = new AESEngine();
-		String encryptMe = "EncryptThis";
+		/*String encryptMe = "EncryptThis";
 		byte[] encrypted = aes.encryptString(key, encryptMe);
 		System.out.println("encrypted bytes length=" + encrypted.length);
 		String encryptedString = new String(encrypted);
@@ -292,9 +310,24 @@ public class AESEngine implements CryptEngine {
 		
 		System.out.println(AESEngine.finalizeKey(key, KEY_LENGTH_128));
 		System.out.println(AESEngine.finalizeKey(key, KEY_LENGTH_192));
-		System.out.println(AESEngine.finalizeKey("notreal", KEY_LENGTH_256));
+		System.out.println(AESEngine.finalizeKey("notreal", KEY_LENGTH_256));*/
 		//System.out.println(aes.finalizeKey(key, KEY_LENGTH_512));
+		
+		System.out.println("\nTesting decryption with IV");
+		key = "notreal";
+		key = aes.finalizeKey(key, KEY_LENGTH_256);
+		System.out.println("final key=" + key);
+		System.out.println("key length=" + key.length());
+		String plainText = "password";
+		byte[] enc1 = aes.encryptString(key, plainText);
+		String enc1Encoded = Base64.getEncoder().encodeToString(enc1);
+		String enc2Encoded = android.util.Base64.encodeToString(enc1, android.util.Base64.NO_WRAP);
+		System.out.println("enc1Encoded=" + enc1Encoded + "|");
+		System.out.println("enc12Encoded=" + enc2Encoded + "|");
+		System.out.println("decrypt bytes=" + aes.decryptBytes(key, enc1));
+		//System.out.println("decrypt string=" + aes.decryptString(key, new String(enc1)));
+		System.out.println("HelloPlaygroundHelloAgainHello".substring(20, 24));
 	}
-	*/
+	
 
 }

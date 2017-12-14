@@ -6,8 +6,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.passvault.util.model.GithubContent;
-import com.passvault.util.model.RegistrationServer;
+import com.passvault.model.GithubContent;
+import com.passvault.model.RegistrationServer;
 
 import android.util.Base64;
 

@@ -21,13 +21,13 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.passvault.model.DeleteRequest;
+import com.passvault.model.Gateway;
+import com.passvault.model.GithubContent;
+import com.passvault.model.RegistrationRequest;
+import com.passvault.model.RegistrationServer;
+import com.passvault.model.RegistrationUUID;
 import com.passvault.util.Utils;
-import com.passvault.util.model.DeleteRequest;
-import com.passvault.util.model.Gateway;
-import com.passvault.util.model.GithubContent;
-import com.passvault.util.model.RegistrationRequest;
-import com.passvault.util.model.RegistrationServer;
-import com.passvault.util.model.RegistrationUUID;
 
 
 // Used to make REST calls to registration service

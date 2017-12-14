@@ -1,6 +1,6 @@
 package com.passvault.util.register;
 
-import com.passvault.util.model.RegistrationUUID;
+import com.passvault.model.RegistrationUUID;
 
 public class StartRegistrationResponse implements RegisterResponse {
 

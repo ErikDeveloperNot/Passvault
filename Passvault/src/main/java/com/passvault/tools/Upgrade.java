@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.passvault.crypto.AESEngine;
+import com.passvault.data.Store;
+import com.passvault.data.couchbase.CBLStore;
+import com.passvault.data.file.JsonStore;
 import com.passvault.util.Account;
 import com.passvault.util.Utils;
-import com.passvault.util.data.Store;
-import com.passvault.util.data.couchbase.CBLStore;
 
 public class Upgrade {
 
@@ -18,9 +19,9 @@ public class Upgrade {
 	
 	public static void main(String[] args) {
 		// TODO options to run specific upgrades
-		dataFile = args[0];
-		upgradeToCBL();
-
+		//dataFile = args[0];
+		//upgradeToCBL();
+		upgradefromCBLToJson();
 	}
 	
 	
@@ -77,6 +78,40 @@ System.out.println(accounts.size());
 		//startCmdLineLoop(accounts);
 		//new PasswordVault(finalKey.toString(), dataFile);
 	}
+	
+	
+	private static void upgradefromCBLToJson() {
+		char[] key = System.console().readPassword("Enter encrypt/decrypt key:");
+		try {
+			encryptionKey = AESEngine.finalizeKey(new String(key), PasswordVault.KEY_SIZE_FACTOR);
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		List<Account> accounts = new ArrayList<>();
+		
+		try {
+			cblStore = new CBLStore("pass_vault", 
+					CBLStore.DatabaseFormat.SQLite, encryptionKey);
+
+			cblStore.loadAccounts(accounts);
+			//cblStore.saveAccounts(accounts);
+			System.out.println(accounts.size());		
+			
+			System.setProperty("com.passvault.data.file", "data.json");
+			JsonStore store = new JsonStore();
+			store.setEncryptionKey(encryptionKey);
+			store.saveAccounts(accounts);
+			
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
 	
 /*	
 	private static void startCmdLineLoop(List<Account> accounts) {

@@ -32,8 +32,8 @@ import org.glassfish.jersey.client.ClientConfig;
 
 import com.passvault.crypto.AESEngine;
 import com.passvault.crypto.CryptEngine;
+import com.passvault.model.Gateway;
 import com.passvault.ui.text.SyncCmd;
-import com.passvault.util.model.Gateway;
 
 import android.util.Base64;
 

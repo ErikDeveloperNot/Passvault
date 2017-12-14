@@ -19,13 +19,38 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 	protected boolean checkLower, checkUpper, checkSpecial, checkDigits;
 	
 	protected char[] specials = {'@', '_', '$', '&', '!', '?', '*', '-'};
-	private char[] defaultLower;
-	private char[] defaultUpper;
-	private char[] defaultDigits;
-	private char[] defaultSpecial;
+	private static char[] defaultLower;
+	private static char[] defaultUpper;
+	private static char[] defaultDigits;
+	private static char[] defaultSpecial;
 	
 	static {
 		logger = Logger.getLogger("com.passvault.util");
+		
+		//set allowed lowercase
+		defaultLower = new char[26];
+		
+		for (int x=((int)'a'), j=0; x<=((int)'z'); x++, j++) {
+			defaultLower[j] = (char)x;
+		}
+		
+		//set allowed uppercase
+		defaultUpper = new char[26];
+		
+		for (int x=((int)'A'), j=0; x<=((int)'Z'); x++, j++) {
+			defaultUpper[j] = (char)x;
+		}
+		
+		//set allowed numbers
+		defaultDigits = new char[10];
+		
+		for (int x=((int)'0'), j=0; x<=((int)'9'); x++, j++) {
+			defaultDigits[j] = (char)x;
+		}
+		
+		//set allowed special characters
+		char[] c = {'@', '_', '$', '&', '!', '?', '*', '-'};
+		defaultSpecial = c;
 	}
 	
 	public DefaultRandomPasswordGenerator() {
@@ -46,38 +71,38 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 		
 		//set allowed lowercase
 		if (lower) {
-			defaultLower = new char[26];
+			//defaultLower = new char[26];
 			
 			for (int x=((int)'a'), j=0; x<=((int)'z'); x++, j++) {
 				allowedCharacters.add((char)x);
-				defaultLower[j] = (char)x;
+				//defaultLower[j] = (char)x;
 			}
 		}
 		
 		//set allowed uppercase
 		if (upper) {
-			defaultUpper = new char[26];
+			//defaultUpper = new char[26];
 			
 			for (int x=((int)'A'), j=0; x<=((int)'Z'); x++, j++) {
 				allowedCharacters.add((char)x);
-				defaultUpper[j] = (char)x;
+				//defaultUpper[j] = (char)x;
 			}
 		}
 		
 		//set allowed numbers
 		if (digits) {
-			defaultDigits = new char[10];
+			//defaultDigits = new char[10];
 			
 			for (int x=((int)'0'), j=0; x<=((int)'9'); x++, j++) {
 				allowedCharacters.add((char)x);
-				defaultDigits[j] = (char)x;
+				//defaultDigits[j] = (char)x;
 			}
 		}
 		
 		//set allowed special characters
 		if (special) {
 			char[] c = {'@', '_', '$', '&', '!', '?', '*', '-'};
-			defaultSpecial = c;
+			//defaultSpecial = c;
 			
 			for (char d : c) {
 				allowedCharacters.add(d);
@@ -115,7 +140,7 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 		try {
 			random = SecureRandom.getInstanceStrong();
 			logger.fine("Using SecureRandom for generator");
-		} catch (NoSuchAlgorithmException e) {
+		} catch (Throwable e) { //NoSuchAlgorithmException e) {
 			System.err.println("Not able to use SecureRandom, falling back to RandomNumberGenerator !!!!");
 			logger.log(Level.WARNING, "Unable to use SecureRandom, using RandomNumberGenerator: " + e.getMessage(), e);
 			e.printStackTrace();
@@ -239,19 +264,19 @@ public class DefaultRandomPasswordGenerator implements RandomPasswordGenerator {
 		this.length = length;
 	}
 
-	public char[] getDefaultLower() {
+	public static  char[] getDefaultLower() {
 		return defaultLower;
 	}
 
-	public char[] getDefaultUpper() {
+	public static char[] getDefaultUpper() {
 		return defaultUpper;
 	}
 
-	public char[] getDefaultDigits() {
+	public static char[] getDefaultDigits() {
 		return defaultDigits;
 	}
 
-	public char[] getDefaultSpecial() {
+	public static char[] getDefaultSpecial() {
 		return defaultSpecial;
 	}
 	

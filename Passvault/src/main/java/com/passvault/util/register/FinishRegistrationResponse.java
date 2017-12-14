@@ -1,6 +1,6 @@
 package com.passvault.util.register;
 
-import com.passvault.util.model.Gateway;
+import com.passvault.model.Gateway;
 
 public class FinishRegistrationResponse implements RegisterResponse {
 	

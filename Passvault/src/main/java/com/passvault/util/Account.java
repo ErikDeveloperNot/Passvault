@@ -137,7 +137,7 @@ public class Account implements Comparable<Account>, Serializable {
 		if (obj == null)
 			return false;
 		
-		if (((Account)obj).getName().equalsIgnoreCase(name))
+		if (obj instanceof Account && ((Account)obj).getName().equalsIgnoreCase(name))
 			return true;
 		else 
 			return false;

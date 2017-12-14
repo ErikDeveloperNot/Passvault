@@ -13,9 +13,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
 
-import com.passvault.util.data.Store;
-import com.passvault.util.data.couchbase.CBLStore;
-import com.passvault.util.data.file.JsonStore;
+import com.passvault.data.Store;
+import com.passvault.data.couchbase.CBLStore;
+import com.passvault.data.file.JsonStore;
 
 public class MRUComparator implements Comparator<Account> {
 

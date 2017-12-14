@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import com.passvault.crypto.AESEngine;
+import com.passvault.data.Store;
+import com.passvault.data.couchbase.CBLStore;
+import com.passvault.data.file.JsonStore;
 import com.passvault.ui.text.Cmd;
 import com.passvault.util.Account;
-import com.passvault.util.data.Store;
-import com.passvault.util.data.couchbase.CBLStore;
-import com.passvault.util.data.file.JsonStore;
 
 public class PasswordVault {
 	
@@ -60,6 +60,7 @@ try {
 		} else if (storeType.equalsIgnoreCase("json")) {
 			Store jsonStore = new JsonStore();
 			jsonStore.setEncryptionKey(key);
+			((JsonStore)jsonStore).checkForUpdate();
 			logger.fine("Using Json Store for persistence");
 			cmd = new Cmd(accounts, key, jsonStore);
 		} else {
