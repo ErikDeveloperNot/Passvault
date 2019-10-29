@@ -6,7 +6,7 @@ CD <VAULT_DIR>\.passvault
 SET LIB=<VAULT_DIR>\.passvault\lib\*
 
 :: registration server url
-SET REG_SERVER=ec2-13-56-39-109.us-west-1.compute.amazonaws.com:8443
+SET REG_SERVER=passvault.erikdevelopernot.net:8443
 
 :: local database name
 SET DB_NAME=pass_vault

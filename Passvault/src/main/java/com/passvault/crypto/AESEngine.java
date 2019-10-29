@@ -149,6 +149,10 @@ public class AESEngine implements CryptEngine {
         try {
             SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), ALGORITHM);
         		String ivString = finalizeKey(key.substring(20, 24), 16);
+String ivString2 = "0123456789012345";
+//System.out.println("iv: " + ivString);
+//System.out.println("iv: " + ivString2);
+ivString = ivString2;
             IvParameterSpec iv = new IvParameterSpec(ivString.getBytes("UTF-8"));
         		
             Cipher cipher = Cipher.getInstance(CIPHER);
@@ -201,7 +205,11 @@ public class AESEngine implements CryptEngine {
         
         try {
             SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), ALGORITHM);
-        		String ivString = finalizeKey(key.substring(20, 24), 16);
+        	String ivString = finalizeKey(key.substring(20, 24), 16);
+ String ivString2 = "0123456789012345";
+//System.out.println("iv: " + ivString); 
+// System.out.println("iv: " + ivString2);
+ ivString = ivString2;
             IvParameterSpec iv = new IvParameterSpec(ivString.getBytes("UTF-8"));
         		
             Cipher cipher = Cipher.getInstance(CIPHER);
@@ -314,16 +322,19 @@ public class AESEngine implements CryptEngine {
 		//System.out.println(aes.finalizeKey(key, KEY_LENGTH_512));
 		
 		System.out.println("\nTesting decryption with IV");
-		key = "notreal";
+//		key = "TestKey";
+		key = "01234567890123456789012345678901";
 		key = aes.finalizeKey(key, KEY_LENGTH_256);
 		System.out.println("final key=" + key);
 		System.out.println("key length=" + key.length());
+//		String plainText = "The quick brown fox jumps over the lazy dog";
 		String plainText = "password";
 		byte[] enc1 = aes.encryptString(key, plainText);
 		String enc1Encoded = Base64.getEncoder().encodeToString(enc1);
 		String enc2Encoded = android.util.Base64.encodeToString(enc1, android.util.Base64.NO_WRAP);
-		System.out.println("enc1Encoded=" + enc1Encoded + "|");
+		System.out.println("enc1Encoded=" + enc1Encoded + "|, length=" + enc1Encoded.length());
 		System.out.println("enc12Encoded=" + enc2Encoded + "|");
+		System.out.println("Bytes: " + new String(enc1));
 		System.out.println("decrypt bytes=" + aes.decryptBytes(key, enc1));
 		//System.out.println("decrypt string=" + aes.decryptString(key, new String(enc1)));
 		System.out.println("HelloPlaygroundHelloAgainHello".substring(20, 24));

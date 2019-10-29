@@ -69,7 +69,7 @@ public class RegisterAccount {
 		this.registerServer = registerServer;
 		logger.info("Register server set to: " + registerServer);
 	}
-	
+
 	
 	/*
 	 *  Version 1 Registration
@@ -236,7 +236,7 @@ client.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
 		Invocation.Builder builder = createBuilder(paths);
 		ObjectMapper sendMapper = new ObjectMapper();
         Response response = null;
-        
+      
         try {
 			response = builder.post(Entity.json(sendMapper.writeValueAsString(sendModel)));
 		} catch (Exception e) {

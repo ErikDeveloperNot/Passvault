@@ -624,14 +624,26 @@ public class JsonStore extends BaseStore {
 			} catch (Exception e) {
 
 				if (password == null) {
-					password = account.getPassword();
-					logger.warning("Unable to decrypt current password for account: " + account.getAccountName());
-					decrypted = false;
+					// try to decrypt with old version of decryptBytes
+					password = decryptWithOld(key, account.getPassword());
+					
+					if (password == null) {
+						account.getPassword();
+						logger.warning("Unable to decrypt current password for account: " + account.getAccountName());
+						decrypted = false;
+					}
+					
 					
 					try {
 						oldPassword = aesEngine.decryptBytes(key, decodeString(account.getOldPassword()));
 					} catch (Exception e1) {
-						oldPassword = account.getOldPassword();
+						oldPassword = decryptWithOld(key, account.getOldPassword());
+						
+						if (oldPassword == null && password != null) {
+							oldPassword = password;
+						} else {
+							oldPassword = account.getOldPassword();
+						}
 					}
 				} else {
 					// if just old pass cant be decrypted to mark account
@@ -640,8 +652,22 @@ public class JsonStore extends BaseStore {
 							", setting password to the current password.");
 				}
 					
-				logger.warning("Unable to decrypt password for: " + account.getAccountName() + ", " + e.getMessage());
-				e.printStackTrace();
+				if (!decrypted) {
+					logger.warning("Unable to decrypt password for: " + account.getAccountName() + ", " + e.getMessage());
+					e.printStackTrace();
+				} else {
+					logger.info("Successfully decrypted passwords with deprecated decryption, saving with new encryption");
+					saveAccount(new Account(
+							account.getAccountName(), 
+							account.getUserName(), 
+							password, 
+							oldPassword,
+							dataStore.getSettings().getGeneral().getAccountUUID(), 
+							account.getUpdateTime(), 
+							account.getURL(),
+							account.isDeleted()),
+							key);
+				}
 			}
 			
 			toAdd = new Account(account.getAccountName(), 
@@ -661,6 +687,23 @@ public class JsonStore extends BaseStore {
 		}
 		
 	}
+	
+	
+	private String decryptWithOld(String key, String password) {
+		AESEngine engine = (AESEngine) AESEngine.getInstance();
+		logger.fine("Trying to decrypt with deprecated decryption");
+		
+		try {
+			password = engine.decryptBytesDeprecated(key, decodeString(password));
+		} catch (Exception e) {
+			logger.warning("Unable to decrypt with deprecated decryption, " + e.getMessage());
+			e.printStackTrace();
+			password = null;
+		}
+		
+		return password;
+	}
+	
 
 	@Override
 	/*
