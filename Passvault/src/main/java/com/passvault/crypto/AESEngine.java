@@ -152,7 +152,7 @@ public class AESEngine implements CryptEngine {
 String ivString2 = "0123456789012345";
 //System.out.println("iv: " + ivString);
 //System.out.println("iv: " + ivString2);
-ivString = ivString2;
+//ivString = ivString2;
             IvParameterSpec iv = new IvParameterSpec(ivString.getBytes("UTF-8"));
         		
             Cipher cipher = Cipher.getInstance(CIPHER);
@@ -209,7 +209,7 @@ ivString = ivString2;
  String ivString2 = "0123456789012345";
 //System.out.println("iv: " + ivString); 
 // System.out.println("iv: " + ivString2);
- ivString = ivString2;
+// ivString = ivString2;
             IvParameterSpec iv = new IvParameterSpec(ivString.getBytes("UTF-8"));
         		
             Cipher cipher = Cipher.getInstance(CIPHER);
